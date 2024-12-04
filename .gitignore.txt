@@ -1,1 +1,2 @@
-.ipynb_checkpoints
+/laboneq_output/*
+**/*.ipynb_checkpoints/
