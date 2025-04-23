@@ -1,0 +1,61 @@
+instruments:
+  SHFQC:
+  - address: DEV12195
+    uid: device_shfqc
+    interface: 1gbe
+    options: SHFQC/PLUS/QC6CH
+
+connections:
+  device_shfqc:
+    - acquire_signal: T0/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: T0/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: T0/drive_line
+      ports: SGCHANNELS/3/OUTPUT
+
+    - acquire_signal: T1/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: T1/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: T1/drive_line
+      ports: SGCHANNELS/3/OUTPUT
+
+    - acquire_signal: F0/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: F0/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: F0/drive_line
+      ports: SGCHANNELS/3/OUTPUT
+    - iq_signal: F0/flux_drive_line
+      ports: SGCHANNELS/5/OUTPUT
+
+    - acquire_signal: F1/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: F1/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: F1/drive_line
+      ports: SGCHANNELS/3/OUTPUT
+
+    - acquire_signal: C2PHI/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: C2PHI/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: C2PHI/drive_line
+      ports: SGCHANNELS/2/OUTPUT
+
+    - acquire_signal: HGKP/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: HGKP/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: HGKP/drive_line
+      ports: SGCHANNELS/5/OUTPUT
+
+    - acquire_signal: SGKP/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: SGKP/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: SGKP/drive_line
+      ports: SGCHANNELS/0/OUTPUT
+    - iq_signal: SGKP/flux_drive_line
+      ports: SGCHANNELS/1/OUTPUT
