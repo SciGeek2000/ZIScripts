@@ -1,0 +1,5 @@
+2025.05.12 19:08:56.461 | laboneq.dsl.session                           | WARNING The 'use_async_api' argument is deprecated and has no effect. The async API is always used.
+2025.05.12 19:13:40.546 | laboneq.dsl.session                           | WARNING The 'use_async_api' argument is deprecated and has no effect. The async API is always used.
+2025.05.12 20:00:01.060 | laboneq.dsl.session                           | WARNING The 'use_async_api' argument is deprecated and has no effect. The async API is always used.
+2025.05.12 20:48:15.759 | laboneq.controller.util                       | CRITICAL SHFQC/SG:dev12195: Local oscillator for channel 4 is required, but is not provided.
+2025.05.12 20:48:54.666 | laboneq.controller.util                       | CRITICAL SHFQC/SG:dev12195: Local oscillator for channel 4 is required, but is not provided.
