@@ -1,3 +1,6 @@
+# Imports #
+###############################################################################
+
 import datetime
 import pandas as pd
 import time
@@ -31,24 +34,19 @@ from laboneq.analysis.fitting import (
     exponential_decay,
 )
 import laboneq_applications
-from laboneq_applications.qpu_types.tunable_transmon import TunableTransmonOperations, TunableTransmonQubit, TunableTransmonQubitParameters
+from laboneq_applications.qpu_types.tunable_transmon import (
+    TunableTransmonOperations,
+    TunableTransmonQubit,
+    TunableTransmonQubitParameters
+)
 
-import experiments
 
-# Defining QuantumElement with their associated QuantumParameters class
+# Cos(2phi) Definition #
+###############################################################################
 
-# C2PHI
 @attrs.define(kw_only=True)
 class C2PhiParameters(QuantumParameters):
-    """C2PhiParams parameters.
-
-    Attributes
-    ----------
-    resonance_frequency_ge:
-        The resonance frequency of the 0-1 transition (Hz).
-    drive_lo_frequency:
-        The frequency of the drive signal local oscillator (Hz).
-    """
+    '''C2PhiParams parameters.'''
 
     resonance_frequency_ge: float | None = None
     drive_lo_frequency: float | None = None
@@ -71,6 +69,10 @@ class C2PhiParameters(QuantumParameters):
 
 @attrs.define()
 class C2Phi(QuantumElement):
+    '''
+    Defines the parameters, signals, and calibration of a C2Phi QuantumElement
+    '''
+    
     PARAMETERS_TYPE = C2PhiParameters
     
     REQUIRED_SIGNALS = (
@@ -83,10 +85,17 @@ class C2Phi(QuantumElement):
         "fast_flux",
         "slow_flux",
     )
+    
     SIGNAL_ALIASES = {}
    
     def calibration(self) -> Calibration:
-        """Calibration for the C2Phi"""
+        '''
+        Function for returning the proper calibration for a C2Phi element
+
+        Generally will be called by a DeviceSetup.set_calibration(Calibration)
+        or Experiment.set_calibration(Calibration)
+        '''
+        
         # define the local oscillator if `drive_lo_frequency` was specified:
         if self.parameters.drive_lo_frequency is not None:
             drive_lo = Oscillator(
@@ -119,27 +128,14 @@ class C2Phi(QuantumElement):
         calibration[self.signals["drive"]] = sig_cal
         return Calibration(calibration)
 
+
+# Fluxonium Definition #
 ###############################################################################
 
-# Fluxonium
 @attrs.define(kw_only=True)
 class FluxoniumParameters(QuantumParameters):
-    """Fluxonium parameters.
+    '''Fluxonium parameters.'''
 
-    Attributes
-    ----------
-    resonance_frequency_ge:
-        The resonance frequency of the 0-1 transition (Hz).
-    drive_lo_frequency:
-        The frequency of the drive signal local oscillator (Hz).
-    readout_len:
-        The length that the readout pulse is played (s).
-    readout_amp:
-        The amplitude of the readout pulse (arb).
-    """
-
-    resonance_frequency_ge: float | None = None
-    drive_lo_frequency: float | None = None
     readout_resonator_frequency: float | None
     readout_lo_frequency: float | None = None 
     resonance_frequency_ge: float | None = None
@@ -158,6 +154,11 @@ class FluxoniumParameters(QuantumParameters):
 
 @attrs.define()
 class Fluxonium(QuantumElement):
+    '''
+    Defines the parameters, signals, calibration and other functions of a
+    Fluxonium QuantumElement
+    '''
+    
     PARAMETERS_TYPE = FluxoniumParameters
     
     REQUIRED_SIGNALS = (
@@ -170,10 +171,17 @@ class Fluxonium(QuantumElement):
         "fast_flux",
         "slow_flux"
     )
+    
     SIGNAL_ALIASES = {}
 
     def calibration(self) -> Calibration:
-        """Calibration for the Fluxonium"""
+        '''
+        Function for returning the proper calibration for a Fluxonium element
+
+        Generally will be called by a DeviceSetup.set_calibration(Calibration)
+        or Experiment.set_calibration(Calibration)
+        '''       
+        
         # define the local oscillator if `drive_lo_frequency` was specified:
         if self.parameters.drive_lo_frequency is not None:
             drive_lo = Oscillator(
@@ -182,6 +190,7 @@ class Fluxonium(QuantumElement):
             )
         else:
             drive_lo = None
+            
         # calculate the drive line RF frequency:
         if (
             self.parameters.drive_lo_frequency is not None
@@ -194,6 +203,7 @@ class Fluxonium(QuantumElement):
         else:
             drive_rf_frequency = None
         calibration = {}
+        
         # define the drive signal calibration:
         sig_cal = SignalCalibration()
         if drive_rf_frequency is not None:
@@ -203,12 +213,53 @@ class Fluxonium(QuantumElement):
                 modulation_type=ModulationType.AUTO,
             )
         sig_cal.local_oscillator = drive_lo
-        # calibration[self.signals["drive"]] = sig_cal
+        calibration[self.signals["drive"]] = sig_cal
+
+        sig_cal = SignalCalibration()
+        sig_cal.local_oscillator = Oscillator(
+            uid=f'{self.uid}_readout_local_osc',
+            frequency=self.parameters.readout_lo_frequency,
+        )
+        sig_cal.oscillator = Oscillator(
+            uid=f'{self.uid}_readout_rf_frequency',
+            frequency=(self.parameters.readout_resonator_frequency - self.parameters.readout_lo_frequency)
+        )
+        calibration[self.signals['measure']] = sig_cal
+        calibration[self.signals['acquire']] = sig_cal # Unclear if I actually need both here
+
+        # sig_cal = SignalCalibration()
+        # sig_cal.local_oscillator = Oscillator(
+        #     uid=f'{self.uid}_fast_flux_local_osc',
+        #     frequency=0
+        # )
+        # sig_cal.oscillator = Oscillator(
+        #     uid=f'{self.uid}_fast_flux_rf_osc',
+        #     frequency=0
+        # )
+        # calibration[self.signals['fast_flux']] = sig_cal
+       
+        # sig_cal = SignalCalibration()
+        # sig_cal.local_oscillator = Oscillator(
+        #     uid=f'{self.uid}_fast_flux_local_osc',
+        #     frequency=0
+        # )
+        # sig_cal.oscillator = Oscillator(
+        #     uid=f'{self.uid}_fast_flux_rf_osc',
+        #     frequency=0
+        # )
+        # calibration[self.signals['fast_flux']] = sig_cal 
         return Calibration(calibration)
 
 
-# qops create sections that are meant to be reused in various experiments)
+# General Quantum Operations Definition #
+###############################################################################
+
 class CustomGeneralOperations(dsl.QuantumOperations):
+    '''
+    Defines the general quantum operations which all qubits (explicitly defined
+    within QUBIT_TYPES) should be applicable.
+    '''
+    
     QUBIT_TYPES = (Fluxonium, C2Phi)
 
     @dsl.quantum_operation
@@ -242,5 +293,5 @@ class CustomGeneralOperations(dsl.QuantumOperations):
         q: QUBIT_TYPES,
         sig: None
     ) -> None:
-        '''Sweeps through awg frequencies on '''
+        '''Sweeps through awg frequencies on the specified signal'''
         return
