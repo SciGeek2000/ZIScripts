@@ -11,9 +11,6 @@ from laboneq.analysis.fitting import (
 from laboneq.contrib.example_helpers.plotting.plot_helpers import plot_simulation
 
 # descriptor imports
-from laboneq.contrib.example_helpers.descriptors.shfsg_shfqa_pqsc import (
-    descriptor_shfsg_shfqa_pqsc,
-)
 
 # for saving results and pulse sheets
 from pathlib import Path
@@ -247,3 +244,21 @@ def res_spectroscopy_CW(freq_sweep, exp_settings):
                 exp_spec.reserve(signal="measure")
 
     return exp_spec
+
+def adjust_phase(
+        IQ_data: np.ndarray, frequency: np.ndarray, 
+        electrical_delay: float,
+        ) -> np.ndarray:
+    '''Adjusts the phase to be flattened and unwrapped'''
+    adjusted_complex = np.exp(1j*electrical_delay*2*np.pi*frequency)*IQ_data
+    flattened_angle = np.unwrap(np.angle(adjusted_complex))
+    flattened_angle = flattened_angle - np.mean(flattened_angle)
+    return flattened_angle 
+
+# Globally defined yoko call function
+def change_current(session, yoko_dict, yoko_dict_key, current_setpoint, step_time, silence: bool=True):
+    '''To be used in neartime loops for the ZI box'''
+    yoko = yoko_dict[yoko_dict_key]
+    yoko.ramp_current(current_setpoint, 1e-6, step_time)
+    if silence is False:
+        print(f'{yoko_dict_key}' + str(new_current))

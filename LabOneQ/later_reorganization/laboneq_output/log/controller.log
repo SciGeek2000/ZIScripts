@@ -211,3 +211,11 @@ SHFQC/SG:dev12195: (PLAYHOLDOFF) Hold-off errors detected in QA waveform player 
 2025.06.05 16:37:48.692 | laboneq.controller.devices.device_zi          | WARNING SHFQC/QA:dev12195: Channel 0 Output overrange count: 432
 2025.06.06 10:17:18.603 | laboneq.controller.devices.device_zi          | WARNING SHFQC/QA:dev12195: Channel 0 Output overrange count: 18
 2025.06.06 10:17:32.582 | laboneq.controller.devices.device_zi          | WARNING SHFQC/QA:dev12195: Channel 0 Output overrange count: 295
+2025.06.06 14:40:36.055 | laboneq.controller.devices.device_zi          | WARNING SHFQC/QA:dev12195: Channel 0 Input overrange count: 1
+2025.06.06 14:54:11.759 | laboneq.controller.devices.device_zi          | WARNING SHFQC/QA:dev12195: Channel 0 Output overrange count: 105
+2025.06.06 15:28:37.416 | laboneq.controller.util                       | CRITICAL SHFQC/SG:dev12195: Local oscillator for channel 3 is required, but is not provided.
+2025.06.06 15:29:18.960 | laboneq.controller.util                       | CRITICAL SHFQC/SG:dev12195: Local oscillator for channel 3 is required, but is not provided.
+2025.06.06 15:29:31.121 | laboneq.controller.util                       | CRITICAL SHFQC/SG:dev12195: Local oscillator for channel 3 is required, but is not provided.
+2025.06.06 15:41:32.320 | laboneq.controller.util                       | CRITICAL SHFQC/SG:dev12195: Local oscillator for channel 4 is required, but is not provided.
+2025.06.06 15:47:50.869 | laboneq.controller.devices.device_zi          | WARNING SHFQC/QA:dev12195: Channel 0 Input overrange count: 142
+2025.06.06 15:48:05.560 | laboneq.controller.devices.device_zi          | WARNING SHFQC/QA:dev12195: Channel 0 Input overrange count: 12
