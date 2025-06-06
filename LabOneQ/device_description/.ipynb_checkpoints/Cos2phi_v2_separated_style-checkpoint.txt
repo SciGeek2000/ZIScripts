@@ -1,0 +1,94 @@
+instruments:
+  SHFQC:
+  - address: DEV12195
+    uid: device_shfqc
+    interface: 1gbe
+    options: SHFQC/PLUS/QC6CH
+
+connections:
+  device_shfqc:
+    - acquire_signal: T0/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: T0/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: T0/drive_line
+      ports: SGCHANNELS/4/OUTPUT
+
+    - acquire_signal: T1/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: T1/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: T1/drive_line
+      ports: SGCHANNELS/4/OUTPUT
+
+    - acquire_signal: F0/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: F0/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: F0/drive_line
+      ports: SGCHANNELS/3/OUTPUT
+    - iq_signal: F0/flux_drive_line
+      ports: SGCHANNELS/3/OUTPUT
+
+    - acquire_signal: F1/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: F1/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: F1/drive_line
+      ports: SGCHANNELS/4/OUTPUT
+
+    - acquire_signal: LC2PHI/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: LC2PHI/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: LC2PHI/drive_line
+      ports: SGCHANNELS/2/OUTPUT
+    - iq_signal: LC2PHI/flux_drive_line
+      ports: SGCHANNELS/5/OUTPUT
+
+    - acquire_signal: MC2PHI/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: MC2PHI/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: MC2PHI/drive_line
+      ports: SGCHANNELS/5/OUTPUT
+
+    - acquire_signal: HC2PHI/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: HC2PHI/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: HC2PHI/drive_line
+      ports: SGCHANNELS/0/OUTPUT
+    - iq_signal: HC2PHI/flux_drive_line
+      ports: SGCHANNELS/1/OUTPUT
+
+
+
+#F1 = Fluxonium(
+#    uid='F1',
+#    signals={
+#        'acquire': 'F1/acquire_line', # These are just dictionary keys for the path to the logical signal group as defined in the YAML
+#        'drive': 'F1/drive_line', # These could also be key with logical signal rather than key with str
+#        'measure': 'F1/measure_line',
+#    },
+#    parameters={
+#        'resonance_frequency_ge': 1,
+#        'readout_resonator_frequency':6866759709,
+#        'readout_lo_frequency':6.8e9,
+#        'resonance_frequency_ge':3.64e9,
+#        'drive_lo_frequency':3.6e9,
+#        'readout_integration_delay':88e-9,
+#        'readout_range_out':-20,
+#        'drive_range':10,
+#        'readout_range_in':5,
+#        'pulse_length': 500e-9,
+#        'readout_len': 2e-6,
+#        'time_domain_reset_length': 300e-6,
+#        'cw_reset_length': 5e-9,
+#        'readout_amp': 0.5,
+#        'amplitude_pi': 0.32,
+#        'amplitude_pi_div_2': 0.18,
+#        'flux_sweetspot': -172e-6,
+#        'flux_setpoint': -119e-6
+#    }
+#)
