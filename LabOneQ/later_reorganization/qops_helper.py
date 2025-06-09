@@ -46,11 +46,11 @@ class CustomGeneralOperations(dsl.QuantumOperations):
         )
         dsl.delay(
             signal=q.signals['acquire'],
-            time=1000e-9,
+            time=10000e-9,
         )
         dsl.delay(
             signal=q.signals['measure'],
-            time=1000e-9,
+            time=10000e-9,
         )
         return
 

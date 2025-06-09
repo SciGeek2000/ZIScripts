@@ -1,0 +1,11 @@
+**/.ipynb_checkpoints/
+
+**/.virtual_documents/
+
+LabOneQ/laboneq_output/**
+
+**/*.log
+
+LabOneQ/later_reorganization/data/*
+
+LabOneQ/data/*

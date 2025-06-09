@@ -5,19 +5,22 @@ from qelement_helper import *
 from qops_helper import *
 from qubit_experiments import *
 
-def plot_exp(exp: Experiment, session: Session, qubit):
+def plot_exp(exp: Experiment, session: Session, qubit, **kwargs):
     match exp.uid:
         case 'Local Resonator Trace':
-            fig, ax = plot_local_resonator_trace(exp, session, qubit)
+            fig, ax = plot_local_resonator_trace(exp, session, qubit, **kwargs)
             return fig, ax
         case 'Global Trace':
-            fig, ax = plot_global_resonator_trace(exp, session, qubit)
+            fig, ax = plot_global_resonator_trace(exp, session, qubit, **kwargs)
             return fig, ax
         case 'Punchout':
-            fig, ax = plot_punchout(exp, session, qubit)
+            fig, ax = plot_punchout(exp, session, qubit, **kwargs)
             return fig, ax
         case 'Simple Spectrum':
-            fig, ax = plot_simple_spectrum(exp, session, qubit)
+            fig, ax = plot_simple_spectrum(exp, session, qubit, **kwargs)
+            return fig, ax
+        case 'Flux Sweep Trace':
+            fig, ax = plot_flux_sweep_trace(exp, session, qubit, **kwargs)
             return fig, ax
 
 def plot_local_resonator_trace(exp, session, qubit):
@@ -75,7 +78,7 @@ def plot_global_resonator_trace(exp, session, qubit):
     fig.tight_layout()
     return fig, ax
 
-def plot_punchout(exp, session, qubit):
+def plot_punchout(exp, session, qubit, data_type:str='Phase'):
     my_results = session.get_results() #a deep copy of session.results
     # Extracts data from the exp.acquire method with the same key name
     my_acquired_results = my_results.acquired_results['results']
@@ -90,15 +93,20 @@ def plot_punchout(exp, session, qubit):
     amplitude = my_acquired_results.axis[0]
     power = 10*np.log10(amplitude**2)+exp.signals[f'{qubit.uid}/measure_line'].calibration.range
 
-    graphing_data = np.abs(phase.T)# normalized_dB_data #phase.T
+    if data_type=='Phase':
+        graphing_data = normalized_dB_data
+    elif data_type=='Amplitude':
+        graphing_data = phase.T
+    else:
+        raise Exception('Not a valid data_type str')
 
     fig, ax = plt.subplots(1,2, figsize=(9,6))
     cmap0 = ax[0].pcolor(amplitude,
                 freqs,
                 graphing_data,
                 shading='nearest')
-    ax[0].set_title(f'{qubit.uid} Punchout of Resonator (Pulse Amplitude)')
-    ax[0].set_xlabel('Pulse Amplitude')
+    ax[0].set_title(f'{qubit.uid} Punchout of Resonator ({data_type})')
+    ax[0].set_xlabel('Pulse Amplitude at Max Power')
     ax[0].set_ylabel('Readout Frequency (GHz)')
     ax[0].set_xscale('log')
     cmap1 = ax[1].pcolor(power,
@@ -107,8 +115,8 @@ def plot_punchout(exp, session, qubit):
                 shading='nearest',)
     fig.colorbar(cmap0, ax=ax[0])
     fig.colorbar(cmap1, ax=ax[1])
-    ax[1].set_title(f'{qubit.uid} Punchout of Resonator (dBm)')
-    ax[1].set_xlabel('dBm')
+    ax[1].set_title(f'{qubit.uid} Punchout of Resonator ({data_type})')
+    ax[1].set_xlabel('Pulse Amplitude (Effective dBm at Max Amp)')
     ax[1].set_ylabel('Readout Frequency (GHz)')
     fig.tight_layout()
     return fig, ax
@@ -139,5 +147,38 @@ def plot_simple_spectrum(exp, session, qubit):
     ax[1].grid()
     # ax[0].vlines(qubit.parameters.resonance_frequency_ge, np.min(amplitude), np.max(amplitude), colors='r');
     # ax[1].vlines(qubit.parameters.resonance_frequency_ge, np.min(phase), np.max(phase), colors='r')
+    fig.tight_layout()
+    return fig, ax
+
+def plot_flux_sweep_trace(exp, session, qubit):
+    my_results = session.get_results() #a deep copy of session.results
+    # Extracts data from the exp.acquire method with the same key name
+    my_acquired_results = my_results.acquired_results['results']
+    # For plotting current vs single resonator point
+    # For plotting 1D flux sweep
+    freqs = my_acquired_results.axis[1] + exp.signals[f'{qubit.uid}/measure_line'].calibration.local_oscillator.frequency
+    IQ_data = my_acquired_results.data
+    amplitude = np.abs(IQ_data)
+    phase = adjust_phase(IQ_data, freqs, qubit.parameters.readout_integration_delay)
+    # currents = my_acquired_results.axis[0][0]*1e6
+    currents = my_acquired_results.axis[0]*1e6
+
+    fig, ax = plt.subplots(1,2, figsize=(15,6))
+    cmap0 = ax[0].pcolor(currents,
+        freqs,
+        amplitude.T,
+        shading='nearest')
+    ax[0].set_title(f'{qubit.uid} Resonator Current Response')
+    ax[0].set_xlabel('Currents (uA)')
+    ax[0].set_ylabel('Readout Frequency (GHz)')
+    cmap1 = ax[1].pcolor(currents,
+        freqs,
+        phase.T,
+        shading='nearest',)
+    fig.colorbar(cmap0, ax=ax[0])
+    fig.colorbar(cmap1, ax=ax[1])
+    ax[1].set_title(f'{qubit.uid} Resonator Current Response')
+    ax[1].set_xlabel('Currents (uA)')
+    ax[1].set_ylabel('Readout Frequency (GHz)')
     fig.tight_layout()
     return fig, ax

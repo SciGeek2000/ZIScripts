@@ -10,7 +10,6 @@ import statistics as stat
 from pathlib import Path
 from datetime import date
 from typing import Callable
-from qcodes.instrument_drivers.yokogawa.GS200 import GS200
 
 
 import laboneq

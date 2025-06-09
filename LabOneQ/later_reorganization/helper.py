@@ -256,9 +256,9 @@ def adjust_phase(
     return flattened_angle 
 
 # Globally defined yoko call function
-def change_current(session, yoko_dict, yoko_dict_key, current_setpoint, step_time, silence: bool=True):
+def change_current(session, yoko_dict_key, current_setpoint, step_time, silence: bool=True):
     '''To be used in neartime loops for the ZI box'''
-    yoko = yoko_dict[yoko_dict_key]
-    yoko.ramp_current(current_setpoint, 1e-6, step_time)
+    global yoko_dict
+    yoko_dict[yoko_dict_key].ramp_current(current_setpoint, 1e-6, step_time)
     if silence is False:
-        print(f'{yoko_dict_key}' + str(new_current))
+        print(f'{yoko_dict_key}' + str(current_setpoint))

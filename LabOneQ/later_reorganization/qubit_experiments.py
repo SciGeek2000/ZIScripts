@@ -1,4 +1,5 @@
 from all_imports import *
+from helper import *
 from qops_helper import *
 from qelement_helper import *
 
@@ -8,6 +9,7 @@ def local_trace(
     q: QuantumElement,
     rel_left_rf, #neg
     rel_right_rf, #pos
+    ro_range: int=None,
     trace_pts: int=101,
     averages: int=2**8,
     drive_on: bool=False,
@@ -17,6 +19,9 @@ def local_trace(
     A local trace centered about the stated resonator frequency in
     qubit.parameters.readout_resonator_frequency
     '''
+    if ro_range is None:
+        ro_range = q.parameters.readout_range_out
+
     ro_rf_center_frequency = (
         q.parameters.readout_resonator_frequency
         - q.parameters.readout_lo_frequency
@@ -29,6 +34,7 @@ def local_trace(
     active_exp_cal = dsl.experiment_calibration()
     active_exp_sig_cal = active_exp_cal[q.signals['measure']]
     active_exp_sig_cal.oscillator.frequency = ro_freq_sweep
+    active_exp_sig_cal.range = ro_range
 
     with dsl.acquire_loop_rt(
         name='Real Time Loop',
@@ -159,6 +165,7 @@ def flux_sweep_trace(
     current_pts=101,
     trace_pts=101,
     averages=2**8,
+    silence=True,
     qops: dsl.QuantumOperations=CustomGeneralOperations(),
 ):
     '''
@@ -196,11 +203,10 @@ def flux_sweep_trace(
     ):
         dsl.call(
             change_current,
-            yoko_dict,
             yoko_dict_key=yoko_dict_key,
             current_setpoint=current_sweep,
             step_time=0.01,
-            silence=True
+            silence=silence
         )
         with dsl.acquire_loop_rt(
             name='Real Time Loop',
@@ -245,6 +251,7 @@ def flux_sweep_spectrum(
     drive_pts,
     current_ro_mapping: Callable|None=None,
     averages=2**8,
+    silence=True,
     qops: dsl.QuantumOperations=CustomGeneralOperations()
 ):
     '''
@@ -295,7 +302,7 @@ def flux_sweep_spectrum(
             yoko_dict_key=yoko_dict_key,
             current_setpoint=current_sweep,
             step_time=0.01,
-            silence=True
+            silence=silence
         )
         with dsl.acquire_loop_rt(
             name='Real Time Loop',
@@ -372,7 +379,12 @@ def sweep_spectrum(
             qops.measure(q, 'results')
     return
 
-# Order of new experiments needed:
-# - Punchout
-# - Spectrum
+# Code cleanup:
+# TODO: Refine existing functions (appropriately sets current setpoint etc etc)
+# TODO: Refine calibration procedure
+# TODO: Add resonator tracking
+# TODO: Add simple standard saving (like before) to each experiment
 #
+# New experiments:
+# TODO: 2D flux sweep
+# TODO: 1D flux sweep with spectrum
