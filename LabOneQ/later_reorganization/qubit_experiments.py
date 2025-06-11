@@ -2,11 +2,12 @@ from all_imports import *
 from helper import *
 from qops_helper import *
 from qelement_helper import *
+from yoko_helper import change_current
 
 # Defining experiments
 @dsl.qubit_experiment(name='Local Resonator Trace')
 def local_trace(
-    q: dsl.QuantumElement,
+    q: QuantumElement,
     rel_left_rf, #neg
     rel_right_rf, #pos
     ro_range: int=None,
@@ -52,7 +53,7 @@ def local_trace(
 
 @dsl.qubit_experiment(name='Global Trace')
 def global_trace(
-    q: dsl.QuantumElement,
+    q: QuantumElement,
     trace_pts: int=201,
     averages: int=2**8,
     qops: dsl.QuantumOperations = CustomGeneralOperations()
@@ -99,7 +100,7 @@ def global_trace(
 
 @dsl.qubit_experiment(name='Punchout')
 def punchout(
-    q: laboneq.dsl.quantum.QuantumElement,
+    q: QuantumElement,
     ro_range_max: int,
     center_ro_freq=None,
     rel_ro_left_rf=-10e6,
@@ -155,7 +156,7 @@ def punchout(
             
 @dsl.qubit_experiment(name='Flux Sweep Trace')
 def flux_sweep_trace(
-    q: laboneq.dsl.quantum.QuantumElement,
+    q: QuantumElement,
     yoko_dict_key: str,
     center_ro_freq=None,
     rel_ro_left_rf=-10e6,
@@ -222,7 +223,7 @@ def flux_sweep_trace(
 
 # @dsl.qubit_experiment
 # def flux_sweep_spectrum(
-#     q: laboneq.dsl.quantum.QuantumElement,
+#     q: QuantumElement,
 #     center_drive_freq: int,
 #     rel_drive_left_rf: int,
 #     rel_drive_right_rf: int,
@@ -240,7 +241,7 @@ def flux_sweep_trace(
 
 @dsl.qubit_experiment(name='Flux Sweep Spectrum')
 def flux_sweep_spectrum(
-    q: laboneq.dsl.quantum.QuantumElement,
+    q: QuantumElement,
     yoko_dict_key: str,
     center_drive_freq,
     rel_drive_left_rf,
@@ -324,7 +325,7 @@ def null_qubit_experiment(q):
 
 @dsl.qubit_experiment(name='Simple Spectrum')
 def sweep_spectrum(
-    q: laboneq.dsl.quantum.QuantumElement,
+    q: QuantumElement,
     yoko_dict: dict,
     yoko_dict_key: str,
     rel_drive_left_rf,

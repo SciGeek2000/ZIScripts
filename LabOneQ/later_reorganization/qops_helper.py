@@ -10,8 +10,8 @@ class CustomGeneralOperations(dsl.QuantumOperations):
     within QUBIT_CLASS) should be applicable.
     '''
     
-    QUBIT_CLASS = [Fluxonium, C2Phi, Gridium, Transmon]
-    QUBIT_CLASS_TYPE = list[dsl.QuantumElement] | dsl.QuantumElement
+    QUBIT_TYPES = (Fluxonium, C2Phi, Gridium, Transmon)
+    QUBIT_CLASS_TYPE = list[QuantumElement] | QuantumElement
 
     @dsl.quantum_operation
     def measure(

@@ -254,7 +254,7 @@ class Fluxonium(QuantumElement):
 # General Quantum Operations Definition #
 ###############################################################################
 
-class CustomGeneralOperations(dsl.QuantumOperations):
+class CustomGeneralOperations(QuantumOperations):
     '''
     Defines the general quantum operations which all qubits (explicitly defined
     within QUBIT_TYPES) should be applicable.
