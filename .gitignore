@@ -9,3 +9,5 @@ LabOneQ/laboneq_output/**
 LabOneQ/later_reorganization/data/*
 
 LabOneQ/data/*
+
+**/__pycache__/

@@ -10,7 +10,7 @@ from datetime import date
 from typing import Callable
 
 
-import laboneq
+import laboneq.simple as dsl
 import laboneq.serializers
 import laboneq.pulse_sheet_viewer.pulse_sheet_viewer as psv
 from laboneq.dsl.quantum import QPU, QuantumPlatform

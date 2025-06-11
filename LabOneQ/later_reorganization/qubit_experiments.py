@@ -6,7 +6,7 @@ from qelement_helper import *
 # Defining experiments
 @dsl.qubit_experiment(name='Local Resonator Trace')
 def local_trace(
-    q: QuantumElement,
+    q: dsl.QuantumElement,
     rel_left_rf, #neg
     rel_right_rf, #pos
     ro_range: int=None,
@@ -30,7 +30,7 @@ def local_trace(
     right_rf = ro_rf_center_frequency + rel_right_rf
     
     ro_rf_freqs = np.linspace(left_rf, right_rf, trace_pts)
-    ro_freq_sweep = SweepParameter('ro_freq_sweep', ro_rf_freqs) 
+    ro_freq_sweep = dsl.SweepParameter('ro_freq_sweep', ro_rf_freqs) 
     active_exp_cal = dsl.experiment_calibration()
     active_exp_sig_cal = active_exp_cal[q.signals['measure']]
     active_exp_sig_cal.oscillator.frequency = ro_freq_sweep
@@ -39,7 +39,7 @@ def local_trace(
     with dsl.acquire_loop_rt(
         name='Real Time Loop',
         count=averages,
-        acquisition_type=AcquisitionType.SPECTROSCOPY
+        acquisition_type=dsl.AcquisitionType.SPECTROSCOPY
     ):
         with dsl.sweep(
             name='Readout Frequency Sweep',
@@ -52,7 +52,7 @@ def local_trace(
 
 @dsl.qubit_experiment(name='Global Trace')
 def global_trace(
-    q: QuantumElement,
+    q: dsl.QuantumElement,
     trace_pts: int=201,
     averages: int=2**8,
     qops: dsl.QuantumOperations = CustomGeneralOperations()
@@ -62,13 +62,13 @@ def global_trace(
     No client-facing customizability.
     '''
     
-    ro_lo_sweep = LinearSweepParameter(
+    ro_lo_sweep = dsl.LinearSweepParameter(
         axis_name='ro lo sweep',
         start=4e9,
         stop=8e9,
         count=5
     )
-    ro_rf_sweep = LinearSweepParameter(
+    ro_rf_sweep = dsl.LinearSweepParameter(
         axis_name='ro rf sweep',
         start=-500e6,
         stop=500e6,
@@ -88,7 +88,7 @@ def global_trace(
         with dsl.acquire_loop_rt(
             name='Real Time Loop',
             count=averages,
-            acquisition_type=AcquisitionType.SPECTROSCOPY
+            acquisition_type=dsl.AcquisitionType.SPECTROSCOPY
         ):
             with dsl.sweep(
                 name='Readout RF Sweep',
@@ -123,9 +123,9 @@ def punchout(
     right_rf = ro_rf_center_frequency + rel_ro_right_rf
 
     ro_rf_freqs = np.linspace(left_rf, right_rf, ro_pts)
-    ro_freq_sweep = SweepParameter('ro_freq_sweep', ro_rf_freqs)
+    ro_freq_sweep = dsl.SweepParameter('ro_freq_sweep', ro_rf_freqs)
 
-    power_sweep = SweepParameter(
+    power_sweep = dsl.SweepParameter(
         uid='Readout_Power',
         values=np.logspace(start=lower_power,stop=higher_power,num=power_pts, base=10))
 
@@ -143,7 +143,7 @@ def punchout(
         with dsl.acquire_loop_rt(
             name='Real Time Loop',
             count=averages,
-            acquisition_type=AcquisitionType.SPECTROSCOPY
+            acquisition_type=dsl.AcquisitionType.SPECTROSCOPY
         ):
            with dsl.sweep(
                 name='Readout Frequency Sweep',
@@ -183,9 +183,9 @@ def flux_sweep_trace(
     right_rf = ro_rf_center_frequency + rel_ro_right_rf
 
     ro_rf_freqs = np.linspace(left_rf, right_rf, trace_pts)
-    ro_freq_sweep = SweepParameter('ro_freq_sweep', ro_rf_freqs)
+    ro_freq_sweep = dsl.SweepParameter('ro_freq_sweep', ro_rf_freqs)
 
-    current_sweep = LinearSweepParameter(
+    current_sweep = dsl.LinearSweepParameter(
         f'Sweeping {yoko_dict_key}',
         left_current,
         right_current,
@@ -211,7 +211,7 @@ def flux_sweep_trace(
         with dsl.acquire_loop_rt(
             name='Real Time Loop',
             count=averages,
-            acquisition_type=AcquisitionType.SPECTROSCOPY
+            acquisition_type=dsl.AcquisitionType.SPECTROSCOPY
         ):
             with dsl.sweep(
                 name='Readout Frequency Sweep',
@@ -274,20 +274,20 @@ def flux_sweep_spectrum(
     left_rf = drive_rf_center_frequency + rel_drive_left_rf
     right_rf = drive_rf_center_frequency + rel_drive_right_rf
 
-    drive_freq_sweep = LinearSweepParameter(
+    drive_freq_sweep = dsl.LinearSweepParameter(
         uid='Drive_Sweep',
         start=left_rf,
         stop=right_rf,
         count=drive_pts
     )
-    current_sweep = LinearSweepParameter(
+    current_sweep = dsl.LinearSweepParameter(
         f'Sweeping {yoko_dict_key}',
         left_current,
         right_current,
         current_pts
     )
     ro_rf_values = current_ro_mapping(current_sweep.values)
-    ro_rf_sweep = SweepParameter('Readout Frequency Sweep', ro_rf_values)
+    ro_rf_sweep = dsl.SweepParameter('Readout Frequency Sweep', ro_rf_values)
 
     active_exp_cal = dsl.experiment_calibration()
     active_exp_cal[q.signals['measure']].oscillator.frequency = ro_rf_values
@@ -307,7 +307,7 @@ def flux_sweep_spectrum(
         with dsl.acquire_loop_rt(
             name='Real Time Loop',
             count=averages,
-            acquisition_type=AcquisitionType.SPECTROSCOPY,
+            acquisition_type=dsl.AcquisitionType.SPECTROSCOPY,
         ):
             with dsl.sweep(
                 name='Drive Frequency Sweep',
@@ -346,7 +346,7 @@ def sweep_spectrum(
     left_rf = drive_rf_center_frequency + rel_drive_left_rf
     right_rf = drive_rf_center_frequency + rel_drive_right_rf
 
-    drive_freq_sweep = LinearSweepParameter(
+    drive_freq_sweep = dsl.LinearSweepParameter(
         uid='Drive_Sweep',
         start=left_rf,
         stop=right_rf,
@@ -369,7 +369,7 @@ def sweep_spectrum(
     with dsl.acquire_loop_rt(
         name='Real Time Loop',
         count=averages,
-        acquisition_type=AcquisitionType.SPECTROSCOPY,
+        acquisition_type=dsl.AcquisitionType.SPECTROSCOPY,
     ):
         with dsl.sweep(
             name='Drive Frequency Sweep',
