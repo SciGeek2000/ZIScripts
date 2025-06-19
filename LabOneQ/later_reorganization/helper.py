@@ -70,10 +70,3 @@ def adjust_phase(
     flattened_angle = np.unwrap(np.angle(adjusted_complex))
     flattened_angle = flattened_angle - np.mean(flattened_angle)
     return flattened_angle
-
-
-def change_current(session, yoko_dict, yoko_dict_key, current_setpoint, step_time, silence: bool=True):
-    '''To be used in neartime loops for the ZI box'''
-    yoko_dict[yoko_dict_key].ramp_current(current_setpoint, 1e-6, step_time)
-    if silence is False:
-        print(f'{yoko_dict_key} is at {current_setpoint*1e6:3f}')

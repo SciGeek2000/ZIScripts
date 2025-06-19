@@ -25,7 +25,7 @@ def general_calibration(self: QuantumElement) -> dict:
         readout_lo = None
     else:
         readout_lo = Oscillator(
-            uid=f"{self.uid}_readout_lo",
+            # uid=f"{self.uid}_readout_lo",
             frequency=self.parameters.readout_lo_frequency,
         )
 
@@ -38,6 +38,11 @@ def general_calibration(self: QuantumElement) -> dict:
             self.parameters.readout_resonator_frequency
             - self.parameters.readout_lo_frequency
         )
+        readout_rf_osc = Oscillator(
+            uid=f'{self.uid}_readout_rf_osc',
+            frequency=readout_rf_frequency,
+            modulation_type=ModulationType.AUTO
+        )
     else:
         readout_rf_frequency = None
 
@@ -45,16 +50,20 @@ def general_calibration(self: QuantumElement) -> dict:
     sig_cal = SignalCalibration()
     sig_cal.local_oscillator = readout_lo
     sig_cal.range = self.parameters.readout_range_out
-    sig_cal.oscillator = Oscillator(
-        uid=f'{self.uid}_readout_measure_rf_osc',
-        frequency=readout_rf_frequency,
-        modulation_type=ModulationType.AUTO,
-    )
+    sig_cal.oscillator = readout_rf_osc
     if readout_lo.frequency < 1e9:
         sig_cal.port_mode = PortMode.LF
     
     # adds entries into the calibration dictionary with measure and acquire
     calibration[self.signals['measure']] = sig_cal
+
+    sig_cal = SignalCalibration()
+    sig_cal.local_oscillator = readout_lo
+    sig_cal.range = self.parameters.readout_range_in
+    sig_cal.oscillator = readout_rf_osc
+    sig_cal.port_delay = self.parameters.readout_integration_delay
+    sig_cal.oscillator.uid = f'{self.uid}_readout_acquire_rf_osc'
+
     calibration[self.signals['acquire']] = sig_cal
 
 
@@ -94,7 +103,6 @@ def general_calibration(self: QuantumElement) -> dict:
 
     # adds entries into the calibration dictionary with drive
     calibration[self.signals["drive"]] = sig_cal
-
 
     return calibration
 
@@ -236,8 +244,9 @@ class Gridium(QuantumElement):
         or Experiment.set_calibration(Calibration)
         '''
         calibration = super().calibration()
-        ff_dict = fast_flux_line_calib()
-        calibration.update(ff_dict)
+        if "fast_flux" in self.signals:
+            ff_dict = fast_flux_line_calib(self)
+            calibration.update(ff_dict)
         return Calibration(calibration)
 
 # Cos(2phi) Definition #
@@ -297,8 +306,9 @@ class C2Phi(QuantumElement):
         or Experiment.set_calibration(Calibration)
         '''
         calibration = super().calibration()
-        ff_dict = fast_flux_line_calib()
-        calibration.update(ff_dict)
+        if "fast_flux" in self.signals:
+            ff_dict = fast_flux_line_calib()
+            calibration.update(ff_dict)
         return Calibration(calibration)
 
 # Fluxonium Definition #
@@ -360,6 +370,7 @@ class Fluxonium(QuantumElement):
         '''       
 
         calibration = super().calibration()
-        ff_dict = fast_flux_line_calib()
-        calibration.update(ff_dict)
+        if "fast_flux" in self.signals:
+            ff_dict = fast_flux_line_calib(self)
+            calibration.update(ff_dict)
         return Calibration(calibration)

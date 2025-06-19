@@ -64,7 +64,7 @@ connections:
       ports: [QACHANNELS/0/OUTPUT]
     - iq_signal: F0/drive_line
       ports: SGCHANNELS/4/OUTPUT
-    - iq_signal: F0/flux_drive_line
+    - iq_signal: F0/fast_flux
       ports: SGCHANNELS/5/OUTPUT
 
     - acquire_signal: F1/acquire_line

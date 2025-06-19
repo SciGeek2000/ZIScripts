@@ -29,7 +29,7 @@ class CustomGeneralOperations(dsl.QuantumOperations):
         session.name = f'Measure f{q.uid}'
 
         readout_pulse = dsl.pulse_library.gaussian_square(
-            uid=f"readout_pulse_{q.uid}",
+            uid=f"{q.uid}_readout_pulse",
             length=q.parameters.readout_len,
             amplitude=1,
             width=q.parameters.readout_len*0.9,
@@ -64,12 +64,12 @@ class CustomGeneralOperations(dsl.QuantumOperations):
         length=100e-9,
         amplitude=1
     ) -> None:
-        '''Configures an arbitrary drive tone'''
+        '''Configures and plays an arbitrary drive tone'''
         
         session = dsl.active_section()
         session.name = name
         drive_pulse = dsl.pulse_library.gaussian_square(
-            uid=name,
+            uid=f'{q.uid}_arb_drive',
             length=length,
             amplitude=amplitude,
             width=length*0.9,
@@ -80,6 +80,7 @@ class CustomGeneralOperations(dsl.QuantumOperations):
             signal=q.signals['drive'],
             pulse=drive_pulse
         )
+        return
 
     @dsl.quantum_operation
     def awg_sweep(
@@ -88,4 +89,29 @@ class CustomGeneralOperations(dsl.QuantumOperations):
         sig: None
     ) -> None:
         '''Sweeps through awg frequencies on the specified signal'''
+        return
+    
+    @dsl.quantum_operation
+    def fast_flux_pulse(
+        self,
+        name: str,
+        q: QUBIT_CLASS_TYPE,
+        pulse_pts: np.ndarray,
+        amplitude: float=1,
+    ) -> None:
+        '''Configures and plays a fast flux pulse'''
+
+        session = dsl.active_section()
+        session.name = name
+        flux_pulse = dsl.pulse_library.sampled_pulse(
+            samples=pulse_pts,
+            uid=f'{q.uid}_ff_pulse',
+            can_compress=True,
+        )
+
+        dsl.play(
+            signal=q.signals['fast_flux'],
+            pulse=flux_pulse,
+            amplitude=amplitude,
+        )
         return

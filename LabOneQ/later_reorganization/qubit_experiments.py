@@ -4,6 +4,8 @@ from qops_helper import *
 from qelement_helper import *
 from yoko_helper import change_current
 
+# NOTE: All dsl.qubit_experiments naturally update the qubit parameters with the qubit.calibration() method
+
 # Defining experiments
 @dsl.qubit_experiment(name='Local Resonator Trace')
 def local_trace(
@@ -31,7 +33,7 @@ def local_trace(
     right_rf = ro_rf_center_frequency + rel_right_rf
     
     ro_rf_freqs = np.linspace(left_rf, right_rf, trace_pts)
-    ro_freq_sweep = dsl.SweepParameter('ro_freq_sweep', ro_rf_freqs) 
+    ro_freq_sweep = SweepParameter('ro_freq_sweep', ro_rf_freqs) 
     active_exp_cal = dsl.experiment_calibration()
     active_exp_sig_cal = active_exp_cal[q.signals['measure']]
     active_exp_sig_cal.oscillator.frequency = ro_freq_sweep
@@ -40,7 +42,7 @@ def local_trace(
     with dsl.acquire_loop_rt(
         name='Real Time Loop',
         count=averages,
-        acquisition_type=dsl.AcquisitionType.SPECTROSCOPY
+        acquisition_type=AcquisitionType.SPECTROSCOPY
     ):
         with dsl.sweep(
             name='Readout Frequency Sweep',
@@ -89,7 +91,7 @@ def global_trace(
         with dsl.acquire_loop_rt(
             name='Real Time Loop',
             count=averages,
-            acquisition_type=dsl.AcquisitionType.SPECTROSCOPY
+            acquisition_type=AcquisitionType.SPECTROSCOPY
         ):
             with dsl.sweep(
                 name='Readout RF Sweep',
@@ -124,9 +126,9 @@ def punchout(
     right_rf = ro_rf_center_frequency + rel_ro_right_rf
 
     ro_rf_freqs = np.linspace(left_rf, right_rf, ro_pts)
-    ro_freq_sweep = dsl.SweepParameter('ro_freq_sweep', ro_rf_freqs)
+    ro_freq_sweep = SweepParameter('ro_freq_sweep', ro_rf_freqs)
 
-    power_sweep = dsl.SweepParameter(
+    power_sweep = SweepParameter(
         uid='Readout_Power',
         values=np.logspace(start=lower_power,stop=higher_power,num=power_pts, base=10))
 
@@ -144,7 +146,7 @@ def punchout(
         with dsl.acquire_loop_rt(
             name='Real Time Loop',
             count=averages,
-            acquisition_type=dsl.AcquisitionType.SPECTROSCOPY
+            acquisition_type=AcquisitionType.SPECTROSCOPY
         ):
            with dsl.sweep(
                 name='Readout Frequency Sweep',
@@ -184,9 +186,9 @@ def flux_sweep_trace(
     right_rf = ro_rf_center_frequency + rel_ro_right_rf
 
     ro_rf_freqs = np.linspace(left_rf, right_rf, trace_pts)
-    ro_freq_sweep = dsl.SweepParameter('ro_freq_sweep', ro_rf_freqs)
+    ro_freq_sweep = SweepParameter('ro_freq_sweep', ro_rf_freqs)
 
-    current_sweep = dsl.LinearSweepParameter(
+    current_sweep = LinearSweepParameter(
         f'Sweeping {yoko_dict_key}',
         left_current,
         right_current,
@@ -212,7 +214,7 @@ def flux_sweep_trace(
         with dsl.acquire_loop_rt(
             name='Real Time Loop',
             count=averages,
-            acquisition_type=dsl.AcquisitionType.SPECTROSCOPY
+            acquisition_type=AcquisitionType.SPECTROSCOPY
         ):
             with dsl.sweep(
                 name='Readout Frequency Sweep',
@@ -220,24 +222,6 @@ def flux_sweep_trace(
             ):
                 qops.measure(q, 'results')
     return
-
-# @dsl.qubit_experiment
-# def flux_sweep_spectrum(
-#     q: QuantumElement,
-#     center_drive_freq: int,
-#     rel_drive_left_rf: int,
-#     rel_drive_right_rf: int,
-#     left_current: float,
-#     right_current: float,
-#     trace_pts: int,
-#     yoko: str,
-# ):
-#     '''
-#     An experiment which uses a pre-defined map_flux_to_ro_freq function to set
-#     the readout frequency while sweeping the drive range and currents.
-#     2D results.
-#     '''
-#     return
 
 @dsl.qubit_experiment(name='Flux Sweep Spectrum')
 def flux_sweep_spectrum(
@@ -275,20 +259,20 @@ def flux_sweep_spectrum(
     left_rf = drive_rf_center_frequency + rel_drive_left_rf
     right_rf = drive_rf_center_frequency + rel_drive_right_rf
 
-    drive_freq_sweep = dsl.LinearSweepParameter(
+    drive_freq_sweep = LinearSweepParameter(
         uid='Drive_Sweep',
         start=left_rf,
         stop=right_rf,
         count=drive_pts
     )
-    current_sweep = dsl.LinearSweepParameter(
+    current_sweep = LinearSweepParameter(
         f'Sweeping {yoko_dict_key}',
         left_current,
         right_current,
         current_pts
     )
     ro_rf_values = current_ro_mapping(current_sweep.values)
-    ro_rf_sweep = dsl.SweepParameter('Readout Frequency Sweep', ro_rf_values)
+    ro_rf_sweep = SweepParameter('Readout Frequency Sweep', ro_rf_values)
 
     active_exp_cal = dsl.experiment_calibration()
     active_exp_cal[q.signals['measure']].oscillator.frequency = ro_rf_values
@@ -308,7 +292,7 @@ def flux_sweep_spectrum(
         with dsl.acquire_loop_rt(
             name='Real Time Loop',
             count=averages,
-            acquisition_type=dsl.AcquisitionType.SPECTROSCOPY,
+            acquisition_type=AcquisitionType.SPECTROSCOPY,
         ):
             with dsl.sweep(
                 name='Drive Frequency Sweep',
@@ -347,7 +331,7 @@ def sweep_spectrum(
     left_rf = drive_rf_center_frequency + rel_drive_left_rf
     right_rf = drive_rf_center_frequency + rel_drive_right_rf
 
-    drive_freq_sweep = dsl.LinearSweepParameter(
+    drive_freq_sweep = LinearSweepParameter(
         uid='Drive_Sweep',
         start=left_rf,
         stop=right_rf,
@@ -370,7 +354,7 @@ def sweep_spectrum(
     with dsl.acquire_loop_rt(
         name='Real Time Loop',
         count=averages,
-        acquisition_type=dsl.AcquisitionType.SPECTROSCOPY,
+        acquisition_type=AcquisitionType.SPECTROSCOPY,
     ):
         with dsl.sweep(
             name='Drive Frequency Sweep',
@@ -380,12 +364,41 @@ def sweep_spectrum(
             qops.measure(q, 'results')
     return
 
-# Code cleanup:
+@dsl.qubit_experiment(name='Fast Flux Calibration')
+def fast_flux_calib(
+    q: QuantumElement,
+):
+    '''An experiment for calibrating the fast flux pulse procedure'''
+    pass
+
+@dsl.qubit_experiment(name='Fast Flux Drive Pulse')
+def fast_flux_drive_pulse(
+    q: QuantumElement,
+):
+    '''An experiment which drives while a calibrated fast flux pulse is active'''
+    pass
+
+@dsl.qubit_experiment(name='2D Flux Sweep')
+def dual_flux_sweep(
+    q: QuantumElement,
+):
+    '''An experiment which does a 2D sweep of yokos'''
+    pass
+
+@dsl.qubit_experiment(name='X90 Tuneup')
+def X90_tuneup(
+    q: QuantumElement,
+):
+    '''A amplitude sweep to calibrate an X90 pulse'''
+    pass
+
+@dsl.qubit_experiment(name='T1')
+def T1(
+    q: QuantumElement,
+):
+    '''A simple T1 experiment given a calibrated X90'''
+    pass
+
 # TODO: Refine existing functions (appropriately sets current setpoint etc etc)
-# TODO: Refine calibration procedure
 # TODO: Add resonator tracking
 # TODO: Add simple standard saving (like before) to each experiment
-#
-# New experiments:
-# TODO: 2D flux sweep
-# TODO: 1D flux sweep with spectrum
