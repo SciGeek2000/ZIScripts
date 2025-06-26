@@ -35,6 +35,7 @@ def local_trace(
     
     ro_rf_freqs = np.linspace(left_rf, right_rf, trace_pts)
     ro_freq_sweep = SweepParameter('ro_freq_sweep', ro_rf_freqs) 
+
     active_exp_cal = dsl.experiment_calibration()
     active_exp_sig_cal = active_exp_cal[q.signals['measure']]
     active_exp_sig_cal.oscillator.frequency = ro_freq_sweep
@@ -155,7 +156,6 @@ def punchout(
             ):
                 qops.measure(q, 'results', amplitude=power_sweep)
     return
-
             
 @dsl.qubit_experiment(name='Flux Sweep Trace')
 def flux_sweep_trace(
@@ -249,7 +249,7 @@ def flux_sweep_spectrum(
     
     2D results.
     '''
-    if q.parameters.res_to_current == None:
+    if q.parameters.res_to_current is None:
         print('WARNING: Not using a current to readout frequency mapping. Instead using the qubit default readout value')
         def current_ro_mapping(current):
             return q.parameters.readout_resonator_frequency
@@ -308,7 +308,7 @@ def flux_sweep_spectrum(
                 qops.measure(q, 'results')
     return
                      
-@dsl.qubit_experiment
+@dsl.qubit_experiment(name='Null Experiment')
 def null_qubit_experiment(q):
     '''A completely empty qubit experiment. Used for debugging'''
     pass
@@ -386,9 +386,61 @@ def fast_flux_drive_pulse(
 @dsl.qubit_experiment(name='2D Flux Sweep')
 def dual_flux_sweep(
     q: QuantumElement,
+    yoko_dict_key_outer: str,
+    yoko_dict_key_inner: str,
+    outer_left_current,
+    outer_right_current,
+    outer_current_count,
+    inner_left_current,
+    inner_right_current,
+    inner_current_count,
+    averages=2**6,
+    silence=False,
+    qops: dsl.QuantumOperations=CustomGeneralOperations(),
 ):
     '''An experiment which does a 2D sweep of yokos'''
-    pass
+    outer_current_sweep = LinearSweepParameter(
+        f'Sweeping {yoko_dict_key_outer}',
+        outer_left_current,
+        outer_right_current,
+        outer_current_count,
+    )
+
+    inner_current_sweep = LinearSweepParameter(
+        f'Sweeping {yoko_dict_key_inner}',
+        inner_left_current,
+        inner_right_current,
+        inner_current_count,
+    )
+
+    with dsl.sweep(
+        name=f'Current Sweep of {yoko_dict_key_outer} (outer)',
+        parameter=outer_current_sweep,
+    ):
+        dsl.call(change_current,
+                 yoko_dict_key=yoko_dict_key_outer,
+                 current_setpoint=outer_current_sweep,
+                 step_time=0.01,
+                 silence=silence,
+        )
+        with dsl.sweep(
+            name=f'Current Sweep of {yoko_dict_key_inner} (inner)',
+            parameter=inner_current_sweep,
+        ):
+            dsl.call(change_current,
+            yoko_dict_key=yoko_dict_key_inner,
+            current_setpoint=inner_current_sweep,
+            step_time=0.01,
+            silence=True,
+            )
+            with dsl.acquire_loop_rt(
+                name='Real Time Loop',
+                count=averages,
+                acquisition_type=AcquisitionType.SPECTROSCOPY_IQ,
+                averaging_mode=AveragingMode.CYCLIC,
+            ):
+                qops.measure(q, 'results')
+    return
 
 @dsl.qubit_experiment(name='X90 Tuneup')
 def X90_tuneup(

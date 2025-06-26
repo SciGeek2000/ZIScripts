@@ -25,6 +25,9 @@ def plot_exp(exp: Experiment, session: Session, qubit, **kwargs):
         case 'Flux Sweep Spectrum':
             fig, ax = plot_flux_sweep_spectrum(exp, session, qubit, **kwargs)
             return fig, ax
+        case '2D Flux Sweep':
+            fig, ax = plot_dual_flux_sweep(exp, session, qubit, **kwargs)
+            return fig, ax
 
 def plot_local_resonator_trace(exp, session, qubit):
     # TODO: Would be nice for this to just be independent of qubit so that it truly is displaying what occured
@@ -227,4 +230,40 @@ def plot_flux_sweep_spectrum(exp, session, qubit, **kwargs):
     fig.colorbar(cmap1, ax=ax[1])
     fig.tight_layout()
     
+    return fig, ax
+
+def plot_dual_flux_sweep(exp, session, qubit, **kwargs):
+    '''Plots a dual flux sweep (like for GKP)'''
+    my_results = session.get_results()
+    my_acquired_results = my_results.acquired_results['results']
+
+    #plotting resonator over flux
+    amp_data = np.abs(my_acquired_results.data)
+    phase_data = np.angle(my_acquired_results.data)
+    db_data = np.log10(amp_data)
+
+    outer_currents = my_acquired_results.axis[0]
+    outer_name = my_acquired_results.axis_name[0]
+    inner_current = my_acquired_results.axis[1]
+    inner_name = my_acquired_results.axis_name[1]
+
+    fig, ax = plt.subplots(1,2, figsize=(15,6))
+    cmap0 = ax[0].pcolor(outer_currents*1e6,
+                inner_current*1e6,
+                db_data.T,
+                shading='nearest')
+    ax[0].set_title(f'{qubit.uid} Resonator 2D Flux Response')
+    ax[0].set_xlabel(f'{outer_name} (uA)')
+    ax[0].set_ylabel(f'{inner_name} (uA)')
+    cmap1 = ax[1].pcolor(outer_currents*1e6,
+                inner_current*1e6,
+                phase_data.T,
+                shading='nearest')
+    ax[1].set_title(f'{qubit.uid} Resonator 2D Flux Response')
+    ax[1].set_xlabel(f'{outer_name} (uA)')
+    ax[1].set_ylabel(f'{inner_name} (uA)')
+    fig.colorbar(cmap0, ax=ax[0])
+    fig.colorbar(cmap1, ax=ax[1])
+    fig.tight_layout()
+
     return fig, ax
