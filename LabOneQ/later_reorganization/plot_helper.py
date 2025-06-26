@@ -22,6 +22,9 @@ def plot_exp(exp: Experiment, session: Session, qubit, **kwargs):
         case 'Flux Sweep Trace':
             fig, ax = plot_flux_sweep_trace(exp, session, qubit, **kwargs)
             return fig, ax
+        case 'Flux Sweep Spectrum':
+            fig, ax = plot_flux_sweep_spectrum(exp, session, qubit, **kwargs)
+            return fig, ax
 
 def plot_local_resonator_trace(exp, session, qubit):
     # TODO: Would be nice for this to just be independent of qubit so that it truly is displaying what occured
@@ -160,7 +163,6 @@ def plot_flux_sweep_trace(exp, session, qubit):
     IQ_data = my_acquired_results.data
     amplitude = np.abs(IQ_data)
     phase = adjust_phase(IQ_data, freqs, qubit.parameters.readout_integration_delay)
-    # currents = my_acquired_results.axis[0][0]*1e6
     currents = my_acquired_results.axis[0]*1e6
 
     fig, ax = plt.subplots(1,2, figsize=(15,6))
@@ -181,4 +183,48 @@ def plot_flux_sweep_trace(exp, session, qubit):
     ax[1].set_xlabel('Currents (uA)')
     ax[1].set_ylabel('Readout Frequency (GHz)')
     fig.tight_layout()
+    return fig, ax
+
+def plot_flux_sweep_spectrum(exp, session, qubit, **kwargs):
+    '''Plots a flux sweep spectrum'''
+    my_results = session.get_results() #a deep copy of session.results
+    # Extracts data from the exp.acquire method with the same key name
+    my_acquired_results = my_results.acquired_results['results']
+    print(my_acquired_results.axis_name)
+    currents = my_acquired_results.axis[0][0]
+    data = my_acquired_results.data
+    freqs = my_acquired_results.axis[1]+exp.signals[f'{qubit.uid}/drive_line'].calibration.local_oscillator.frequency
+    # freqs = np.tile(freqs, (201, 1)).T
+    # print(freqs[0,:])
+    IQ_data = data
+    amplitude = np.abs(IQ_data)
+    # phase = adjust_phase(IQ_data, freqs, qubit.parameters.readout_integration_delay)
+    phase = np.unwrap(np.angle(IQ_data))
+    phase = phase - np.mean(phase, axis=1)[:, None]
+    fig, ax = plt.subplots(1,2, figsize=(16,9))
+    cmap0 = ax[0].pcolor(currents*1e6,
+        freqs,
+        amplitude.T,
+        shading='nearest',)
+        # vmax=3)
+        # vmax=0.5)
+        # vmin=0,
+        # vmax=1)
+    ax[0].set_title(f'{qubit.uid} Two Tone Spectroscopy')
+    ax[0].set_xlabel('Currents (uA)')
+    ax[0].set_ylabel('Drive Frequency (GHz)')
+    cmap1 = ax[1].pcolor(currents*1e6,
+        freqs,
+        phase.T,
+        shading='nearest',)
+        # vmin=,
+        # vmax=
+    # ax[0].axvline(x=-25, color='red', linestyle='--', linewidth=2)
+    fig.colorbar(cmap0, ax=ax[0])
+    ax[1].set_title(f'{qubit.uid} Two Tone Spectroscopy')
+    ax[1].set_xlabel('Currents (uA)')
+    ax[1].set_ylabel('Drive Frequency (GHz)')
+    fig.colorbar(cmap1, ax=ax[1])
+    fig.tight_layout()
+    
     return fig, ax

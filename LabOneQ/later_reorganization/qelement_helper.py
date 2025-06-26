@@ -338,6 +338,7 @@ class FluxoniumParameters(QuantumParameters):
     amplitude_pi_div_2: float | None = None
     flux_sweetspot: float | None = None
     flux_setpoint: float | None = None
+    res_to_current: Callable | None = None
 
 @attrs.define()
 class Fluxonium(QuantumElement):

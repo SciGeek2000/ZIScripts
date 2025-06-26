@@ -6,6 +6,7 @@ from yoko_helper import change_current
 
 # NOTE: All dsl.qubit_experiments naturally update the qubit parameters with the qubit.calibration() method
 
+
 # Defining experiments
 @dsl.qubit_experiment(name='Local Resonator Trace')
 def local_trace(
@@ -234,7 +235,6 @@ def flux_sweep_spectrum(
     right_current,
     current_pts,
     drive_pts,
-    current_ro_mapping: Callable|None=None,
     averages=2**8,
     silence=True,
     qops: dsl.QuantumOperations=CustomGeneralOperations()
@@ -249,10 +249,14 @@ def flux_sweep_spectrum(
     
     2D results.
     '''
-    if current_ro_mapping == None:
+    if q.parameters.res_to_current == None:
         print('WARNING: Not using a current to readout frequency mapping. Instead using the qubit default readout value')
         def current_ro_mapping(current):
             return q.parameters.readout_resonator_frequency
+    else:
+        print('Using res_to_current mapping')
+        def current_ro_mapping(current):
+            return q.parameters.res_to_current(current)
 
     drive_lo_frequency = int(center_drive_freq/0.2e9)*0.2e9
     drive_rf_center_frequency = (center_drive_freq-drive_lo_frequency)
@@ -275,12 +279,14 @@ def flux_sweep_spectrum(
     ro_rf_sweep = SweepParameter('Readout Frequency Sweep', ro_rf_values)
 
     active_exp_cal = dsl.experiment_calibration()
-    active_exp_cal[q.signals['measure']].oscillator.frequency = ro_rf_values
+    # active_exp_cal[q.signals['measure']].oscillator.frequency = ro_rf_sweep
+    active_exp_cal[q.signals['acquire']].oscillator.frequency = ro_rf_sweep
+    active_exp_cal[q.signals['drive']].local_oscillator.frequency = drive_lo_frequency
     active_exp_cal[q.signals['drive']].oscillator.frequency = drive_freq_sweep
 
     with dsl.sweep(
         name=f'Current Sweep of {yoko_dict_key}',
-        parameter=current_sweep,
+        parameter=[current_sweep, ro_rf_sweep],
     ):
         dsl.call(
             change_current,
@@ -310,7 +316,6 @@ def null_qubit_experiment(q):
 @dsl.qubit_experiment(name='Simple Spectrum')
 def sweep_spectrum(
     q: QuantumElement,
-    yoko_dict: dict,
     yoko_dict_key: str,
     rel_drive_left_rf,
     rel_drive_right_rf,
