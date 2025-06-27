@@ -31,8 +31,14 @@ def plot_exp(exp: Experiment, session: Session, qubit, **kwargs):
         case 'X90 Tuneup':
             fig, ax = plot_x90_tuneup(exp, session, qubit, **kwargs)
             return fig, ax
-        case 'T1_exp':
+        case 'T1 Exp':
             fig, ax = plot_T1_exp(exp, session, qubit, **kwargs)
+            return fig, ax
+        case 'T2 Star':
+            fig, ax = plot_T2_star(exp, session, qubit, **kwargs)
+            return fig, ax
+        case 'T2 Echo':
+            fig, ax = plot_T2_echo(exp, session, qubit, **kwargs)
             return fig, ax
 
 def plot_local_resonator_trace(exp, session, qubit):
@@ -291,7 +297,7 @@ def plot_x90_tuneup(exp, session, qubit, **kwargs):
         501
     )
 
-    try: popt_amp, pcov_amp = oscillatory.fit(drive_amp, amplitude)
+    try: popt_amp, pcov_amp = oscillatory.fit(drive_amp, amplitude, 10, 0, 0.5, 0)
     except: pass
 
     try: popt_phase, pcov_phase = oscillatory.fit(drive_amp, phase, 10, 0, 0.5, 0) #frequency, phase, amplitude, offset
@@ -349,4 +355,94 @@ def plot_T1_exp(exp, session, qubit, **kwargs):
     print(f"Fitted parameters: {popt}")
     print('T1 time ' + str(1/popt[0]*1e6) + ' us') 
 
+    return fig, ax
+
+def plot_T2_star(exp, session, qubit, **kwargs):
+    my_results = session.get_results()
+    my_acquired_results = my_results.acquired_results['results']
+    IQ_data = my_acquired_results.data
+    amplitude = np.abs(IQ_data)
+    phase = np.unwrap(np.angle(IQ_data))
+    phase = phase-np.mean(phase)
+
+    time_delay=my_acquired_results.axis[0]
+
+    fitting_plot_x = np.linspace(time_delay[0], time_delay[-1], 501)
+
+    try: popt_amp, pcov_amp = oscillatory_decay.fit(time_delay, amplitude, 2e6, 0, 1e5, 0.1, 3)
+    except: pass
+
+    try: popt_phase, pcov_phase = oscillatory_decay.fit(time_delay, phase, 1e6, 0, 1e6, 0.5, 0) #frequency, phase, decay_rate, amplitude, offset
+    except: pass
+
+    fig, ax = plt.subplots(2, 1, figsize=(8,6))
+    ax[0].scatter(time_delay*1e6, amplitude)
+    try: ax[0].plot(fitting_plot_x*1e6, oscillatory_decay(fitting_plot_x, *popt_amp), '-r')
+    except: pass
+    ax[0].set_title(f'{qubit.uid} Ramsey Oscillations')
+    ax[0].set_xlabel('Time Delay (us)')
+    ax[0].set_ylabel('Amplitude (a.u.)')
+    ax[0].grid()
+    ax[1].scatter(time_delay*1e6, phase)
+    try: ax[1].plot(fitting_plot_x*1e6, oscillatory_decay(fitting_plot_x, *popt_phase), '-r')
+    except: pass
+    ax[1].set_title(f'{qubit.uid} Ramsey Oscillations')
+    ax[1].set_xlabel('Time Delay (us)')
+    ax[1].set_ylabel('Phase (a.u.)')
+    ax[1].grid()
+    fig.tight_layout()
+    try:
+        print(f"Fitted parameters (amplitude): {popt_amp}")
+        print(f'detuning = {popt_amp[0]*1e-6} MHz, T2r = {1e6/popt_amp[2]} us')
+    except: pass
+    try:
+        print(f"Fitted parameters (phase): {popt_phase}")
+        print(f'detuning = {popt_phase[0]*1e-6} MHz, T2r = {1e6/popt_phase[2]} us')
+    except: pass
+
+    return fig, ax
+
+def plot_T2_echo(exp, session, qubit, **kwargs):
+    '''Plots single T2 Echo experiment'''
+    my_results = session.get_results()
+    my_acquired_results = my_results.acquired_results['results']
+
+    IQ_data = my_acquired_results.data
+    amplitude = np.abs(IQ_data)
+    phase = np.unwrap(np.angle(IQ_data))
+    phase = phase-np.mean(phase)
+    time_delay = my_acquired_results.axis[0]
+
+    fitting_plot_x = np.linspace(time_delay[0], time_delay[-1], 501)
+
+    try: popt_amp, pcov_amp = exponential_decay.fit(time_delay, amplitude, 1e6, 0 , 1)
+    except: pass
+
+    try: popt_phase, pcov_phase = exponential_decay.fit(time_delay, phase, 1e6, 0, 1) #decay rate, offset, amplitude
+    except: pass
+
+    fig, ax = plt.subplots(2, 1, figsize=(4,8))
+    ax[0].plot(time_delay*1e6, amplitude, '.k')
+    try: ax[0].plot(fitting_plot_x*1e6, exponential_decay(fitting_plot_x, *popt_amp), '-r')
+    except: pass
+    ax[0].set_title(f'{qubit.uid} T2 Echo')
+    ax[0].set_xlabel('Time Delay (us)')
+    ax[0].set_ylabel('Amplitude (a.u.)')
+    ax[0].grid()
+    ax[1].plot(time_delay*1e6, phase, '.k')
+    try: ax[1].plot(fitting_plot_x*1e6, exponential_decay(fitting_plot_x, *popt_phase), '-r')
+    except: pass
+    ax[1].set_title(f'{qubit.uid} T2 Echo')
+    ax[1].set_xlabel('Time Delay (us)')
+    ax[1].set_ylabel('Phase (a.u.)')
+    ax[1].grid()
+    fig.tight_layout()
+    try:
+        print(f"Fitted parameters (amplitude): {popt_amp}")
+        print('T2e time ' + str(1/popt_amp[0]*1e6) + ' us') 
+    except: pass
+    try:
+        print(f"Fitted parameters (phase): {popt_phase}")
+        print('T2e time ' + str(1/popt_phase[0]*1e6) + ' us') 
+    except: pass
     return fig, ax

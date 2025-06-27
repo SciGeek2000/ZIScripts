@@ -80,7 +80,7 @@ class CustomGeneralOperations(dsl.QuantumOperations):
         dsl.play(
             signal=q.signals['drive'],
             pulse=drive_pulse,
-            amplitude=amplitude
+            amplitude=amplitude,
         )
         return
     

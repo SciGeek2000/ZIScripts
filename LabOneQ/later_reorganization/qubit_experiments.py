@@ -479,7 +479,7 @@ def X90_tuneup(
             qops.measure(q, 'results', t_delay=200e-6)
     return
 
-@dsl.qubit_experiment(name='T1_exp')
+@dsl.qubit_experiment(name='T1 Exp')
 def T1_exp(
     q: QuantumElement,
     min_time,
@@ -509,7 +509,7 @@ def T1_exp(
             name='Readout Delay Sweep',
             parameter=t_delay_sweep,
         ):
-            drive_section = qops.arbitrary_drive(q, 'arb drive', amplitude=q.parameters.amplitude_pi_div_2)
+            drive_section = qops.arbitrary_drive(q, 'x90', amplitude=q.parameters.amplitude_pi)
             drive_section.delay(q.signals['drive'], t_delay_sweep)
             # drive_section.reserve(q.signals['measure'])
             # drive_section.reserve(q.signals['acquire'])
@@ -522,6 +522,96 @@ def T1_exp(
             #     dsl.reserve(q.signals['drive'])
             # qops.arbitrary_drive(q, 'arb drive', amplitude=q.parameters.amplitude_pi_div_2)
             qops.measure(q, 'results', t_delay=t_total-t_delay_sweep)
+    return
+
+@dsl.qubit_experiment(name='T2 Star')
+def T2_star(
+    q: QuantumElement,
+    min_time,
+    max_time,
+    t_count,
+    detuning=None,
+    averages=2**8,
+    reset_delay=100e-6,
+    qops: dsl.QuantumOperations=CustomGeneralOperations()
+):
+    '''A simple T2 star experiment'''
+
+    if detuning is None:
+        pass
+    else:
+        active_exp_cal = dsl.experiment_calibration()
+        active_exp_cal[q.signals['drive']].oscillator.frequency += detuning
+
+    t_delay_sweep = LinearSweepParameter(
+        f'Time Delay',
+        min_time,
+        max_time,
+        t_count,
+    )
+
+    with dsl.acquire_loop_rt(
+        name='Real Time Loop',
+        count=averages,
+        acquisition_type=AcquisitionType.INTEGRATION,
+        averaging_mode=AveragingMode.CYCLIC,
+    ):
+        with dsl.sweep(
+            name='Readout Delay Sweep',
+            parameter=t_delay_sweep,
+        ):
+            drive_section = qops.arbitrary_drive(q, 'x90', amplitude=q.parameters.amplitude_pi_div_2)
+            drive_section.delay(q.signals['drive'], t_delay_sweep)
+            # drive_section.add(qops.arbitrary_drive.omit_section(q, 'x90', amplitude=q.parameters.amplitude_pi_div_2))
+
+            qops.arbitrary_drive(q, 'x90', amplitude=q.parameters.amplitude_pi_div_2)
+            qops.measure(q, 'results', t_delay=reset_delay)
+
+    
+    return
+
+@dsl.qubit_experiment(name='T2 Echo')
+def T2_echo(
+    q: QuantumElement,
+    min_time,
+    max_time,
+    t_count,
+    detuning=None,
+    averages=2**8,
+    reset_delay=100e-6,
+    qops: dsl.QuantumOperations=CustomGeneralOperations()
+):
+    '''A simple T2 echo experiment'''
+
+    if detuning is None:
+        pass
+    else:
+        active_exp_cal = dsl.experiment_calibration()
+        active_exp_cal[q.signals['drive']].oscillator.frequency += detuning
+
+    t_delay_sweep = LinearSweepParameter(
+        f'Time Delay',
+        min_time,
+        max_time,
+        t_count,
+    )
+
+    with dsl.acquire_loop_rt(
+        name='Real Time Loop',
+        count=averages,
+        acquisition_type=AcquisitionType.INTEGRATION,
+        averaging_mode=AveragingMode.CYCLIC,
+    ):
+        with dsl.sweep(
+            name='Readout Delay Sweep',
+            parameter=t_delay_sweep,
+        ):
+            first_drive = qops.arbitrary_drive(q, 'x90', amplitude=q.parameters.amplitude_pi_div_2)
+            first_drive.delay(q.signals['drive'], t_delay_sweep/2)
+            flip_section = qops.arbitrary_drive(q, 'x180', amplitude=q.parameters.amplitude_pi)
+            flip_section.delay(q.signals['drive'], t_delay_sweep/2)
+            qops.arbitrary_drive(q, 'x90_2', amplitude=q.parameters.amplitude_pi_div_2)
+            qops.measure(q, 'results', t_delay=reset_delay)
     return
 
 
