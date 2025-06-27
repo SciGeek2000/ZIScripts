@@ -44,7 +44,8 @@ def local_trace(
     with dsl.acquire_loop_rt(
         name='Real Time Loop',
         count=averages,
-        acquisition_type=AcquisitionType.SPECTROSCOPY
+        acquisition_type=AcquisitionType.SPECTROSCOPY,
+        
     ):
         with dsl.sweep(
             name='Readout Frequency Sweep',
@@ -428,10 +429,10 @@ def dual_flux_sweep(
             parameter=inner_current_sweep,
         ):
             dsl.call(change_current,
-            yoko_dict_key=yoko_dict_key_inner,
-            current_setpoint=inner_current_sweep,
-            step_time=0.01,
-            silence=True,
+                    yoko_dict_key=yoko_dict_key_inner,
+                    current_setpoint=inner_current_sweep,
+                    step_time=0.01,
+                    silence=True,
             )
             with dsl.acquire_loop_rt(
                 name='Real Time Loop',
@@ -445,17 +446,85 @@ def dual_flux_sweep(
 @dsl.qubit_experiment(name='X90 Tuneup')
 def X90_tuneup(
     q: QuantumElement,
+    lower_amp,
+    upper_amp,
+    amp_count,
+    averages=2**8,
+    qops: dsl.QuantumOperations=CustomGeneralOperations()
 ):
     '''A amplitude sweep to calibrate an X90 pulse'''
-    pass
 
-@dsl.qubit_experiment(name='T1')
-def T1(
+    active_exp_cal = dsl.experiment_calibration()
+    active_exp_cal = active_exp_cal[q.signals['acquire']]
+    active_exp_cal.oscillator.modulation_type=ModulationType.SOFTWARE
+    
+    drive_amp_sweep = LinearSweepParameter(
+        f'Sweeping {q.uid} drive amplitude',
+        lower_amp,
+        upper_amp,
+        amp_count
+    )
+
+    with dsl.acquire_loop_rt(
+        name='Real Time Loop',
+        count=averages,
+        acquisition_type=AcquisitionType.INTEGRATION,
+        averaging_mode=AveragingMode.CYCLIC,
+    ):
+        with dsl.sweep(
+            name='Drive Amplitude Sweep',
+            parameter=drive_amp_sweep,
+        ):
+            qops.arbitrary_drive(q, 'arb drive', amplitude=drive_amp_sweep)
+            qops.measure(q, 'results', t_delay=200e-6)
+    return
+
+@dsl.qubit_experiment(name='T1_exp')
+def T1_exp(
     q: QuantumElement,
+    min_time,
+    max_time,
+    t_count,
+    averages=2*8,
+    qops: dsl.QuantumOperations = CustomGeneralOperations()
 ):
     '''A simple T1 experiment given a calibrated X90'''
-    pass
 
-# TODO: Refine existing functions (appropriately sets current setpoint etc etc)
-# TODO: Add resonator tracking
-# TODO: Add simple standard saving (like before) to each experiment
+    t_total = max_time*1.5
+
+    t_delay_sweep = LinearSweepParameter(
+        f'Time Delay',
+        min_time,
+        max_time,
+        t_count,
+    )
+
+    with dsl.acquire_loop_rt(
+        name='Real Time Loop',
+        count=averages,
+        acquisition_type=AcquisitionType.INTEGRATION,
+        averaging_mode=AveragingMode.CYCLIC,
+    ):
+        with dsl.sweep(
+            name='Readout Delay Sweep',
+            parameter=t_delay_sweep,
+        ):
+            drive_section = qops.arbitrary_drive(q, 'arb drive', amplitude=q.parameters.amplitude_pi_div_2)
+            drive_section.delay(q.signals['drive'], t_delay_sweep)
+            # drive_section.reserve(q.signals['measure'])
+            # drive_section.reserve(q.signals['acquire'])
+            # with dsl.section(
+            #     uid='T_delay',
+            #     length=t_delay_sweep
+            # ):
+            #     dsl.reserve(q.signals['measure'])
+            #     dsl.reserve(q.signals['acquire'])
+            #     dsl.reserve(q.signals['drive'])
+            # qops.arbitrary_drive(q, 'arb drive', amplitude=q.parameters.amplitude_pi_div_2)
+            qops.measure(q, 'results', t_delay=t_total-t_delay_sweep)
+    return
+
+
+# [ ] Refine existing functions (appropriately sets current setpoint etc etc)
+# [x] Add resonator tracking
+# [x] Add simple standard saving (like before) to each experiment

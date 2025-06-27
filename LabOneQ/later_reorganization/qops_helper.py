@@ -19,6 +19,7 @@ class CustomGeneralOperations(dsl.QuantumOperations):
         q: QUBIT_CLASS_TYPE,
         acquire_handle: str,
         amplitude=None,
+        t_delay=100e-6
     ) -> None:
         '''Performs a measurement on the perscribed qubit'''
         
@@ -26,7 +27,7 @@ class CustomGeneralOperations(dsl.QuantumOperations):
             amplitude = float(q.parameters.readout_amp)
 
         session = dsl.active_section()
-        session.name = f'Measure f{q.uid}'
+        session.name = f'Measure {q.uid}'
 
         readout_pulse = dsl.pulse_library.gaussian_square(
             uid=f"{q.uid}_readout_pulse",
@@ -48,11 +49,11 @@ class CustomGeneralOperations(dsl.QuantumOperations):
         )
         dsl.delay(
             signal=q.signals['acquire'],
-            time=10000e-9,
+            time=t_delay,
         )
         dsl.delay(
             signal=q.signals['measure'],
-            time=10000e-9,
+            time=t_delay,
         )
         return
 
@@ -61,8 +62,8 @@ class CustomGeneralOperations(dsl.QuantumOperations):
         self,
         q: QUBIT_CLASS_TYPE,
         name: str,
-        length=100e-9,
-        amplitude=1
+        length=200e-9,
+        amplitude=1,
     ) -> None:
         '''Configures and plays an arbitrary drive tone'''
         
@@ -71,16 +72,28 @@ class CustomGeneralOperations(dsl.QuantumOperations):
         drive_pulse = dsl.pulse_library.gaussian_square(
             uid=f'{q.uid}_arb_drive',
             length=length,
-            amplitude=amplitude,
+            amplitude=1,
             width=length*0.9,
             sigma=0.2
         )
 
         dsl.play(
             signal=q.signals['drive'],
-            pulse=drive_pulse
+            pulse=drive_pulse,
+            amplitude=amplitude
         )
         return
+    
+    @dsl.quantum_operation
+    def x90(
+        self,
+        q: QUBIT_CLASS_TYPE,
+        name: str,
+        length=None,
+        amplitude=None,
+    ):
+        '''Configures and plays an X90 pulse'''
+        pass
 
     @dsl.quantum_operation
     def awg_sweep(
