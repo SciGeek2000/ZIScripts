@@ -40,6 +40,9 @@ def plot_exp(exp: Experiment, session: Session, qubit, **kwargs):
         case 'T2 Echo':
             fig, ax = plot_T2_echo(exp, session, qubit, **kwargs)
             return fig, ax
+        case 'Full Spectrum':
+            fig, ax = plot_full_spectrum(exp, session, qubit, **kwargs)
+            return fig, ax
 
 def plot_local_resonator_trace(exp, session, qubit):
     my_results = session.get_results() #a deep copy of session.results
@@ -167,7 +170,7 @@ def plot_simple_spectrum(exp, session, qubit):
     fig.tight_layout()
     return fig, ax
 
-def plot_flux_sweep_trace(exp, session, qubit):
+def plot_flux_sweep_trace(exp, session, qubit): 
     my_results = session.get_results() #a deep copy of session.results
     # Extracts data from the exp.acquire method with the same key name
     my_acquired_results = my_results.acquired_results['results']
@@ -445,4 +448,33 @@ def plot_T2_echo(exp, session, qubit, **kwargs):
         print(f"Fitted parameters (phase): {popt_phase}")
         print('T2e time ' + str(1/popt_phase[0]*1e6) + ' us') 
     except: pass
+    return fig, ax
+
+def plot_full_spectrum(exp, session, qubit, **kwargs):
+    '''Plots a full spectrum'''
+    my_results = session.get_results()
+    my_acquired_results = my_results.acquired_results['results']
+    drive_lo_array = my_acquired_results.axis[0]
+    drive_AWG_freqs = my_acquired_results.axis[1]
+    drive_freqs = np.empty((0))
+    for drive_lo in drive_lo_array:
+        drive_freqs = np.append(drive_freqs, drive_lo + drive_AWG_freqs)
+    IQ_data = my_acquired_results.data.ravel()
+    amplitude = np.abs(IQ_data)
+    phase = np.unwrap(np.angle(IQ_data))
+
+    fig, ax = plt.subplots(2,1, figsize=(8,6))
+    ax[0].plot(drive_freqs, amplitude)
+    ax[0].set_title(f'{qubit.uid} Spectrum')
+    ax[0].set_xlabel('Frequency (GHz)')
+    ax[0].set_ylabel('Amplitude')
+    # ax[0].set_ylim(1, 5)
+    ax[0].grid()
+    ax[1].plot(drive_freqs, phase)
+    ax[1].set_title(f'{qubit.uid} Spectrum')
+    ax[1].set_xlabel('Drive Frequency (GHz)')
+    ax[1].set_ylabel('Phase')
+    # ax[1].set_ylim(2, 2.7)
+    ax[1].grid()
+    fig.tight_layout()
     return fig, ax

@@ -3,6 +3,7 @@ from qelement_helper import *
 from qops_helper import *
 from qubit_experiments import *
 from scipy.optimize import curve_fit
+import dill
 
 def exp_analysis(exp: Experiment, session: Session, qubit, **kwargs):
     match exp.uid:
@@ -10,7 +11,7 @@ def exp_analysis(exp: Experiment, session: Session, qubit, **kwargs):
             analysis = analyze_flux_sweep_trace(exp, session, qubit, **kwargs)
             return analysis
         
-def analyze_flux_sweep_trace(exp, session, qubit, **kwargs):
+def analyze_flux_sweep_trace(exp, session, qubit, **kwargs): # [ ] Normalize amplitude at each frequency value
     '''
     Returns a dictionary with amplitude and phase fits that map
     the current to the resonator's frequency
@@ -60,8 +61,11 @@ def analyze_flux_sweep_trace(exp, session, qubit, **kwargs):
 
     qubit.parameters.res_to_current = make_ro_freq()
 
-    plt.scatter(currents, tracked_resonator)
+    plt.scatter(currents, tracked_resonator) # [ ] It is currently plotting on phase even though it is argmin of amplitude for fitting
     # plt.ylim(6.8e9, 6.9e9)
 
+    if 'save' in kwargs and kwargs['save'] is True:
+        with open(f'make_ro_freq', 'wb') as f:
+            dill.dump(make_ro_freq, f)
 
     return None

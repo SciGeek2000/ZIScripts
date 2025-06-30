@@ -19,7 +19,7 @@ class CustomGeneralOperations(dsl.QuantumOperations):
         q: QUBIT_CLASS_TYPE,
         acquire_handle: str,
         amplitude=None,
-        t_delay=100e-6
+        t_delay=1e-6
     ) -> None:
         '''Performs a measurement on the perscribed qubit'''
         

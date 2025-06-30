@@ -23,3 +23,6 @@ def change_current(session, yoko_dict_key, current_setpoint, step_time, silence:
     yoko_dict[yoko_dict_key].ramp_current(current_setpoint, 1e-6, step_time)
     if silence is False:
         print(f'{yoko_dict_key} is at {current_setpoint*1e6:3f}')
+
+def get_current(yoko_dict_key):
+    return yoko_dict[yoko_dict_key].current.get()

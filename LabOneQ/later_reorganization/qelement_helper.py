@@ -214,6 +214,7 @@ class GridiumParameters(QuantumParameters):
     amplitude_pi_div_2: float | None = None
     flux_sweetspot: float | None = None
     flux_setpoint: float | None = None
+    res_to_current: Callable | None = None
 
 @attrs.define()
 class Gridium(QuantumElement):
@@ -276,6 +277,7 @@ class C2PhiParameters(QuantumParameters):
     amplitude_pi_div_2: float | None = None
     flux_sweetspot: float | None = None
     flux_setpoint: float | None = None 
+    res_to_current: Callable | None = None
 
 @attrs.define()
 class C2Phi(QuantumElement):
