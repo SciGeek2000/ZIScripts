@@ -40,7 +40,8 @@ def local_trace(
         ro_frequency = q.parameters.res_to_current(get_current(yoko_dict_key))
     elif q.parameters.flux_sweetspot is not None:
         print('Using current mapping at sweepspot current')
-        change_current(dsl.active_session(), yoko_dict_key, q.parameters.flux_sweetspot, 0.01)
+        _ = None
+        change_current(_, yoko_dict_key, q.parameters.flux_sweetspot, 0.01)
         ro_frequency = q.parameters.res_to_current(get_current(yoko_dict_key))
 
     ro_rf_center_frequency = (
@@ -242,7 +243,7 @@ def flux_sweep_trace(
                 qops.measure(q, 'results')
     return
 
-@dsl.qubit_experiment(name='Flux Sweep Spectrum') # [ ] TODO: Check that this is behaving properly 
+@dsl.qubit_experiment(name='Flux Sweep Spectrum') # [ ] TODO: Does not work currently. Depracated. Use flux_sweep_full_spectrum instead.
 def flux_sweep_spectrum(
     q: QuantumElement,
     yoko_dict_key: str,
@@ -316,7 +317,7 @@ def flux_sweep_spectrum(
         with dsl.acquire_loop_rt(
             name='Real Time Loop',
             count=averages,
-            acquisition_type=AcquisitionType.SPECTROSCOPY,
+            acquisition_type=AcquisitionType.INTEGRATION,
         ):
             with dsl.sweep(
                 name='Drive Frequency Sweep',
@@ -341,7 +342,7 @@ def sweep_spectrum(
     t_delay=1e-6,
     center_drive_freq=None,
     averages=2**8,
-    LF_mode = False,
+    drive_length=200e-6,
     qops: dsl.QuantumOperations=CustomGeneralOperations()
 ):
     '''
@@ -362,7 +363,8 @@ def sweep_spectrum(
         active_exp_cal[q.signals['measure']].oscillator.frequency = ro_rf_frequency
     elif q.parameters.flux_sweetspot is not None:
         print('Using current mapping at sweepspot current')
-        change_current(dsl.active_session(), yoko_dict_key, q.parameters.flux_sweetspot, 0.01)
+        _ = None
+        change_current(_, yoko_dict_key, q.parameters.flux_sweetspot, 0.01)
         ro_frequency = q.parameters.res_to_current(get_current(yoko_dict_key))
         ro_rf_frequency = ro_frequency - q.parameters.readout_lo_frequency
         active_exp_cal[q.signals['measure']].oscillator.frequency = ro_rf_frequency
@@ -398,13 +400,13 @@ def sweep_spectrum(
         count=averages,
         # acquisition_type=AcquisitionType.SPECTROSCOPY, # These both work roughly equally well here
         acquisition_type=AcquisitionType.INTEGRATION, # Technically the above could be used for continuous drives
-        averaging_mode=AveragingMode.SEQUENTIAL
+        averaging_mode=AveragingMode.CYCLIC,
     ):
         with dsl.sweep(
             name='Drive Frequency Sweep',
             parameter=drive_freq_sweep,
         ):
-            qops.arbitrary_drive(q, 'drive')
+            qops.arbitrary_drive(q, 'drive', length=drive_length)
             qops.measure(q, 'results', t_delay=t_delay)
     return
 
@@ -481,18 +483,42 @@ def dual_flux_sweep(
                 qops.measure(q, 'results')
     return
 
-@dsl.qubit_experiment(name='X90 Tuneup')
+@dsl.qubit_experiment(name='X90 Tuneup') # [ ] TODO: Add a sweetspot flux auto config
 def X90_tuneup(
     q: QuantumElement,
+    yoko_dict_key: str,
     lower_amp,
     upper_amp,
     amp_count,
     averages=2**8,
+    t_drive=200e-6,
+    t_delay=200e-6,
     qops: dsl.QuantumOperations=CustomGeneralOperations()
 ):
     '''A amplitude sweep to calibrate an X90 pulse'''
 
     active_exp_cal = dsl.experiment_calibration()
+
+    # Track resonator if flux dependent
+    if hasattr(q.parameters, 'res_to_current') is False:
+        print('Does not have a res_to_current')
+        pass
+    elif q.parameters.res_to_current is None:
+        print('Not using current mapping')
+    elif q.parameters.flux_sweetspot is None:
+        print('Using current mapping at current current')
+        ro_frequency = q.parameters.res_to_current(get_current(yoko_dict_key))
+        ro_rf_frequency = ro_frequency - q.parameters.readout_lo_frequency
+        active_exp_cal[q.signals['measure']].oscillator.frequency = ro_rf_frequency
+    elif q.parameters.flux_sweetspot is not None:
+        print('Using current mapping at sweepspot current')
+        _ = None
+        change_current(_, yoko_dict_key, q.parameters.flux_sweetspot, 0.01)
+        ro_frequency = q.parameters.res_to_current(get_current(yoko_dict_key))
+        ro_rf_frequency = ro_frequency - q.parameters.readout_lo_frequency
+        active_exp_cal[q.signals['measure']].oscillator.frequency = ro_rf_frequency
+
+
     active_exp_cal = active_exp_cal[q.signals['acquire']]
     active_exp_cal.oscillator.modulation_type=ModulationType.SOFTWARE
     
@@ -513,8 +539,8 @@ def X90_tuneup(
             name='Drive Amplitude Sweep',
             parameter=drive_amp_sweep,
         ):
-            qops.arbitrary_drive(q, 'arb drive', amplitude=drive_amp_sweep)
-            qops.measure(q, 'results', t_delay=200e-6)
+            qops.arbitrary_drive(q, 'arb drive', amplitude=drive_amp_sweep, length=t_drive)
+            qops.measure(q, 'results', t_delay=t_delay)
     return
 
 @dsl.qubit_experiment(name='T1 Exp')
@@ -720,6 +746,193 @@ def full_spectrum(
                 qops.arbitrary_drive(q, 'drive')
                 qops.measure(q, 'results', t_delay=t_delay)
     return
+
+@dsl.qubit_experiment(name='Flux Sweep Full Spectrum')
+def flux_sweep_full_spectrum(
+    q: QuantumElement,
+    yoko_dict_key: str,
+    left_current,
+    right_current,
+    current_pts,
+    drive_pts,
+    averages=2**8,
+    t_delay=5e-6,
+    silence=False,
+    qops: dsl.QuantumOperations=CustomGeneralOperations()
+):
+    '''
+    Goes from LF to RF freqs
+    '''
+
+    active_exp_cal = dsl.experiment_calibration()
+
+    # [ ] TODO: This paragraph can very likely be deleted, since a flux sweep is assumed to be without this
+    if hasattr(q.parameters, 'res_to_current') is False:
+        print('Does not have a res_to_current')
+        pass
+    elif q.parameters.res_to_current is None:
+        print('Not using current mapping')
+    elif q.parameters.flux_sweetspot is None:
+        print('Using current mapping at current current')
+        ro_frequency = q.parameters.res_to_current(get_current(yoko_dict_key))
+        ro_rf_frequency = ro_frequency - q.parameters.readout_lo_frequency
+        active_exp_cal[q.signals['measure']].oscillator.frequency = ro_rf_frequency
+    elif q.parameters.flux_sweetspot is not None:
+        print('Using current mapping at sweepspot current')
+        change_current(dsl.active_session(), yoko_dict_key, q.parameters.flux_sweetspot, 0.01)
+        ro_frequency = q.parameters.res_to_current(get_current(yoko_dict_key))
+        ro_rf_frequency = ro_frequency - q.parameters.readout_lo_frequency
+        active_exp_cal[q.signals['measure']].oscillator.frequency = ro_rf_frequency
+
+    current_values = np.linspace(left_current, right_current, current_pts)
+    ro_rf_values = q.parameters.res_to_current(current_values) - q.parameters.readout_lo_frequency
+
+    current_sweep = SweepParameter(
+        axis_name='Current Sweep',
+        values=current_values,
+    )
+
+    ro_rf_sweep = SweepParameter(
+        axis_name='Readout Frequency Sweep',
+        values=ro_rf_values,
+    )
+
+    drive_lo_sweep = LinearSweepParameter(
+        axis_name='Drive LO Sweep',
+        start=1e9,
+        stop=9e9,
+        count=9,
+    )
+
+    drive_rf_sweep = LinearSweepParameter(
+        axis_name='Drive RF Sweep',
+        start=-500e6,
+        stop=500e6,
+        count=drive_pts,
+    )
+
+    active_exp_cal[q.signals['drive']].local_oscillator.frequency = drive_lo_sweep
+    active_exp_cal[q.signals['drive']].oscillator.frequency = drive_rf_sweep
+    active_exp_cal[q.signals['measure']].oscillator.frequency = ro_rf_sweep
+
+    
+    with dsl.sweep(
+        name='Current/RO Sweep',
+        parameter=[current_sweep, ro_rf_sweep],
+    ):
+        dsl.call(
+            change_current,
+            yoko_dict_key=yoko_dict_key,
+            current_setpoint=current_sweep,
+            step_time=0.01,
+            silence=silence,
+        )
+        with dsl.sweep(
+            name='Drive LO Sweep',
+            parameter=drive_lo_sweep,
+        ):
+            with dsl.acquire_loop_rt(
+                name='Real Time Loop',
+                count=averages,
+                acquisition_type=AcquisitionType.INTEGRATION,
+                averaging_mode=AveragingMode.CYCLIC,
+            ):
+                with dsl.sweep(
+                    name='Drive RF Sweep',
+                    parameter=drive_rf_sweep
+                ):
+                    qops.arbitrary_drive(q, 'drive')
+                    qops.measure(q, 'results', t_delay=t_delay)
+    return
+
+@dsl.qubit_experiment(name='Flux Sweep Spectrum')
+def flux_sweep_spectrum(
+    q: QuantumElement,
+    yoko_dict_key: str,
+    left_current,
+    right_current,
+    current_pts,
+    rel_drive_left_rf,
+    rel_drive_right_rf,
+    drive_pts,
+    t_delay=1e-6,
+    center_drive_freq=None,
+    averages=2**8,
+    LF_mode = False,
+    silence=False,
+    qops: dsl.QuantumOperations=CustomGeneralOperations()
+):
+    '''
+    A simple spectrum experiment
+    '''
+
+    active_exp_cal = dsl.experiment_calibration()
+
+    if center_drive_freq is None:
+        center_drive_freq = q.parameters.resonance_frequency_ge
+
+    # Configure drive for LF or RF mode as necessary
+    if center_drive_freq > 1e9:
+        drive_lo_frequency = int(center_drive_freq/0.2e9)*0.2e9
+        drive_rf_center_frequency = (center_drive_freq-drive_lo_frequency)
+    elif center_drive_freq < 1e9:
+        active_exp_cal[q.signals['drive']].port_mode = PortMode.LF
+        drive_lo_frequency = 0
+        drive_rf_center_frequency = center_drive_freq
+
+    left_rf = drive_rf_center_frequency + rel_drive_left_rf
+    right_rf = drive_rf_center_frequency + rel_drive_right_rf
+
+    current_values = np.linspace(left_current, right_current, current_pts)
+    ro_rf_values = q.parameters.res_to_current(current_values) - q.parameters.readout_lo_frequency
+
+    current_sweep = SweepParameter(
+        axis_name='Current Sweep',
+        values=current_values,
+    )
+
+    ro_rf_sweep = SweepParameter(
+        axis_name='Readout Frequency Sweep',
+        values=ro_rf_values,
+    )
+
+    # Setup drive sweep
+    drive_freq_sweep = LinearSweepParameter(
+        uid='Drive_Sweep',
+        start=left_rf,
+        stop=right_rf,
+        count=drive_pts
+    )
+    
+    active_exp_cal[q.signals['drive']].local_oscillator.frequency = drive_lo_frequency
+    active_exp_cal[q.signals['drive']].oscillator.frequency = drive_freq_sweep
+    active_exp_cal[q.signals['measure']].oscillator.frequency = ro_rf_sweep
+
+    with dsl.sweep(
+        name='Current/RO Sweep',
+        parameter=[current_sweep, ro_rf_sweep],
+    ):
+        dsl.call(
+            change_current,
+            yoko_dict_key=yoko_dict_key,
+            current_setpoint=current_sweep,
+            step_time=0.01,
+            silence=silence,
+        )
+        with dsl.acquire_loop_rt(
+            name='Real Time Loop',
+            count=averages,
+            # acquisition_type=AcquisitionType.SPECTROSCOPY, # These both work roughly equally well here
+            acquisition_type=AcquisitionType.INTEGRATION, # Technically the above could be used for continuous drives
+            averaging_mode=AveragingMode.CYCLIC,
+        ):
+            with dsl.sweep(
+                name='Drive Frequency Sweep',
+                parameter=drive_freq_sweep,
+            ):
+                qops.arbitrary_drive(q, 'drive')
+                qops.measure(q, 'results', t_delay=t_delay)
+        return
 
 
 # [ ] Define a full spectrum experiment (including LF)

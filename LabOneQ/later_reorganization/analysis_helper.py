@@ -35,7 +35,7 @@ def analyze_flux_sweep_trace(exp, session, qubit, **kwargs): # [ ] Normalize amp
         old_currents = my_acquired_results.axis[0]
         old_values = tracked_resonator
         def res_to_current(new_currents: float|np.ndarray):
-            new_ro_values = np.interp(new_currents, old_currents, old_values)
+            new_ro_values = np.interp(new_currents, old_currents, old_values) # [ ] TODO: OFC HAS AN ISSUE REGARDING SWITCHING BETWEEN BRANCHES IF THE CURRENT SAMPLING IS NOT IDENTICAL, THE INTERPOLATION WILL BE WRONG/BAD
             return new_ro_values
         return res_to_current
 

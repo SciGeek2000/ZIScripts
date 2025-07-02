@@ -72,7 +72,7 @@ connections:
     - iq_signal: F1/measure_line
       ports: [QACHANNELS/0/OUTPUT]
     - iq_signal: F1/drive_line
-      ports: SGCHANNELS/3/OUTPUT
+      ports: SGCHANNELS/4/OUTPUT # Documentation says ch3 but ch3 doesn't work so using ch4 instead does work!
 
     - acquire_signal: GKP1/acquire_line
       ports: [QACHANNELS/0/INPUT]
