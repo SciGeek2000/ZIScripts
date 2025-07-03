@@ -7,20 +7,26 @@ from qubit_experiments import *
 
 def plot_exp(exp: Experiment, session: Session, qubit, **kwargs):
     match exp.uid:
-        case 'Local Resonator Trace':
-            fig, ax = plot_local_resonator_trace(exp, session, qubit, **kwargs)
-            return fig, ax
         case 'Global Trace':
             fig, ax = plot_global_resonator_trace(exp, session, qubit, **kwargs)
+            return fig, ax
+        case 'Local Resonator Trace':
+            fig, ax = plot_local_resonator_trace(exp, session, qubit, **kwargs)
             return fig, ax
         case 'Punchout':
             fig, ax = plot_punchout(exp, session, qubit, **kwargs)
             return fig, ax
+        case 'Flux Sweep Trace':
+            fig, ax = plot_flux_sweep_trace(exp, session, qubit, **kwargs)
+            return fig, ax
+        case 'Full Spectrum':
+            fig, ax = plot_full_spectrum(exp, session, qubit, **kwargs)
+            return fig, ax
         case 'Simple Spectrum':
             fig, ax = plot_simple_spectrum(exp, session, qubit, **kwargs)
             return fig, ax
-        case 'Flux Sweep Trace':
-            fig, ax = plot_flux_sweep_trace(exp, session, qubit, **kwargs)
+        case 'Flux Sweep Full Spectrum':
+            fig, ax = plot_flux_sweep_full_spectrum(exp, session, qubit, **kwargs)
             return fig, ax
         case 'Flux Sweep Spectrum':
             fig, ax = plot_flux_sweep_spectrum(exp, session, qubit, **kwargs)
@@ -40,42 +46,6 @@ def plot_exp(exp: Experiment, session: Session, qubit, **kwargs):
         case 'T2 Echo':
             fig, ax = plot_T2_echo(exp, session, qubit, **kwargs)
             return fig, ax
-        case 'Full Spectrum':
-            fig, ax = plot_full_spectrum(exp, session, qubit, **kwargs)
-            return fig, ax
-        case 'Flux Sweep Full Spectrum':
-            fig, ax = plot_flux_sweep_full_spectrum(exp, session, qubit, **kwargs)
-            return fig, ax
-        case 'Flux Sweep Spectrum':
-            fig, ax = plot_flux_sweep_spectrum(exp, session, qubit, **kwargs)
-            return fig, ax
-
-def plot_local_resonator_trace(exp, session, qubit):
-    my_results = session.get_results() #a deep copy of session.results
-
-    # Extracts data from the exp.acquire method with the same key name
-    my_acquired_results = my_results.acquired_results['results']
-
-    # For plotting current vs single resonator point
-    freqs = my_acquired_results.axis[0] + exp.signals[f'{qubit.uid}/measure_line'].calibration.local_oscillator.frequency
-    IQ_data = my_acquired_results.data
-    amplitude = np.abs(IQ_data)
-    phase = adjust_phase(IQ_data, freqs, exp.signals[f'{qubit.uid}/acquire_line'].calibration.port_delay)
-
-    # Plots
-    fig, ax = plt.subplots(2,1, figsize=(8,6))
-    ax[0].plot(freqs, amplitude)
-    ax[0].set_title(f'{qubit.uid} Near Resonator Pulsed Trace')
-    ax[0].set_xlabel('Frequency (GHz)')
-    ax[0].set_ylabel('Amplitude (a.u.)')
-    ax[0].grid()
-    ax[1].plot(freqs, phase)
-    ax[1].set_title(f'{qubit.uid} Near Resonator Pulsed Trace')
-    ax[1].set_xlabel('Frequency (GHz)')
-    ax[1].set_ylabel('Phase')
-    ax[1].grid()
-    fig.tight_layout()
-    return fig, ax
 
 def plot_global_resonator_trace(exp, session, qubit):
     my_results = session.get_results() #a deep copy of session.results
@@ -101,6 +71,33 @@ def plot_global_resonator_trace(exp, session, qubit):
     ax[1].set_title('Wide Range Pulsed Trace')
     ax[1].set_xlabel('Frequency (GHz)')
     ax[1].set_ylabel('Phase')
+    fig.tight_layout()
+    return fig, ax
+
+def plot_local_resonator_trace(exp, session, qubit):
+    my_results = session.get_results() #a deep copy of session.results
+
+    # Extracts data from the exp.acquire method with the same key name
+    my_acquired_results = my_results.acquired_results['results']
+
+    # For plotting current vs single resonator point
+    freqs = my_acquired_results.axis[0] + exp.signals[f'{qubit.uid}/measure_line'].calibration.local_oscillator.frequency
+    IQ_data = my_acquired_results.data
+    amplitude = np.abs(IQ_data)
+    phase = adjust_phase(IQ_data, freqs, exp.signals[f'{qubit.uid}/acquire_line'].calibration.port_delay)
+
+    # Plots
+    fig, ax = plt.subplots(2,1, figsize=(8,6))
+    ax[0].plot(freqs, amplitude)
+    ax[0].set_title(f'{qubit.uid} Near Resonator Pulsed Trace')
+    ax[0].set_xlabel('Frequency (GHz)')
+    ax[0].set_ylabel('Amplitude (a.u.)')
+    ax[0].grid()
+    ax[1].plot(freqs, phase)
+    ax[1].set_title(f'{qubit.uid} Near Resonator Pulsed Trace')
+    ax[1].set_xlabel('Frequency (GHz)')
+    ax[1].set_ylabel('Phase')
+    ax[1].grid()
     fig.tight_layout()
     return fig, ax
 
@@ -147,35 +144,6 @@ def plot_punchout(exp, session, qubit, data_type:str='Phase'):
     fig.tight_layout()
     return fig, ax
 
-def plot_simple_spectrum(exp, session, qubit):
-    my_results = session.get_results() #a deep copy of session.results
-    # Extracts data from the exp.acquire method with the same key name
-    my_acquired_results = my_results.acquired_results['results']
-    # For plotting current vs single resonator point
-    freqs = my_acquired_results.axis[0] + exp.signals[f'{qubit.uid}/drive_line'].calibration.local_oscillator.frequency
-    # freqs = my_acquired_results.axis[0] + qubit.parameters.drive_lo_frequency
-    IQ_data = my_acquired_results.data
-    amplitude = np.abs(IQ_data)
-    phase = np.unwrap(np.angle(IQ_data))
-    phase = phase - np.mean(phase)
-
-    fig, ax = plt.subplots(2,1, figsize=(8,6))
-    ax[0].plot(freqs, amplitude)
-    ax[0].set_title(f'{qubit.uid} Spectrum near Transition')
-    ax[0].set_xlabel('Drive Frequency (GHz)')
-    ax[0].set_ylabel('Amplitude')
-    ax[0].grid()
-    # ax[0].vlines(qubit.parameters.drive_frequency_ge+qubit.parameters.drive_lo_frequency, np.min(amplitude), np.max(amplitude), colors='r');
-    ax[1].plot(freqs, phase)
-    ax[1].set_title(f'{qubit.uid} Spectrum near Transition')
-    ax[1].set_xlabel('Drive Frequency (GHz)')
-    ax[1].set_ylabel('Phase')
-    ax[1].grid()
-    # ax[0].vlines(qubit.parameters.resonance_frequency_ge, np.min(amplitude), np.max(amplitude), colors='r');
-    # ax[1].vlines(qubit.parameters.resonance_frequency_ge, np.min(phase), np.max(phase), colors='r')
-    fig.tight_layout()
-    return fig, ax
-
 def plot_flux_sweep_trace(exp, session, qubit): 
     my_results = session.get_results() #a deep copy of session.results
     # Extracts data from the exp.acquire method with the same key name
@@ -208,48 +176,141 @@ def plot_flux_sweep_trace(exp, session, qubit):
     fig.tight_layout()
     return fig, ax
 
-def plot_flux_sweep_spectrum(exp, session, qubit, **kwargs):
-    '''Plots a flux sweep spectrum'''
+def plot_full_spectrum(exp, session, qubit, **kwargs):
+    '''Plots a full spectrum'''
+    my_results = session.get_results()
+    my_acquired_results = my_results.acquired_results['results']
+    drive_lo_array = my_acquired_results.axis[0]
+    drive_AWG_freqs = my_acquired_results.axis[1]
+    drive_freqs = np.empty((0))
+    for drive_lo in drive_lo_array:
+        drive_freqs = np.append(drive_freqs, drive_lo + drive_AWG_freqs)
+    IQ_data = my_acquired_results.data.ravel()
+    amplitude = np.abs(IQ_data)
+    phase = np.unwrap(np.angle(IQ_data))
+
+    fig, ax = plt.subplots(2,1, figsize=(8,6))
+    ax[0].plot(drive_freqs, amplitude)
+    ax[0].set_title(f'{qubit.uid} Spectrum')
+    ax[0].set_xlabel('Frequency (GHz)')
+    ax[0].set_ylabel('Amplitude')
+    # ax[0].set_ylim(1, 5)
+    ax[0].grid()
+    ax[1].plot(drive_freqs, phase)
+    ax[1].set_title(f'{qubit.uid} Spectrum')
+    ax[1].set_xlabel('Drive Frequency (GHz)')
+    ax[1].set_ylabel('Phase')
+    # ax[1].set_ylim(2, 2.7)
+    ax[1].grid()
+    fig.tight_layout()
+    return fig, ax
+
+def plot_simple_spectrum(exp, session, qubit):
     my_results = session.get_results() #a deep copy of session.results
     # Extracts data from the exp.acquire method with the same key name
     my_acquired_results = my_results.acquired_results['results']
-    print(my_acquired_results.axis_name)
-    currents = my_acquired_results.axis[0][0]
-    data = my_acquired_results.data
-    freqs = my_acquired_results.axis[1]+exp.signals[f'{qubit.uid}/drive_line'].calibration.local_oscillator.frequency
-    # freqs = np.tile(freqs, (201, 1)).T
-    # print(freqs[0,:])
-    IQ_data = data
+    # For plotting current vs single resonator point
+    freqs = my_acquired_results.axis[0] + exp.signals[f'{qubit.uid}/drive_line'].calibration.local_oscillator.frequency
+    # freqs = my_acquired_results.axis[0] + qubit.parameters.drive_lo_frequency
+    IQ_data = my_acquired_results.data
     amplitude = np.abs(IQ_data)
-    # phase = adjust_phase(IQ_data, freqs, exp.signals[f'{qubit.uid}/acquire_line'].calibration.port_delay)
     phase = np.unwrap(np.angle(IQ_data))
+    phase = phase - np.mean(phase)
+
+    fig, ax = plt.subplots(2,1, figsize=(8,6))
+    ax[0].plot(freqs, amplitude)
+    ax[0].set_title(f'{qubit.uid} Spectrum near Transition')
+    ax[0].set_xlabel('Drive Frequency (GHz)')
+    ax[0].set_ylabel('Amplitude')
+    ax[0].grid()
+    # ax[0].vlines(qubit.parameters.drive_frequency_ge+qubit.parameters.drive_lo_frequency, np.min(amplitude), np.max(amplitude), colors='r');
+    ax[1].plot(freqs, phase)
+    ax[1].set_title(f'{qubit.uid} Spectrum near Transition')
+    ax[1].set_xlabel('Drive Frequency (GHz)')
+    ax[1].set_ylabel('Phase')
+    ax[1].grid()
+    # ax[0].vlines(qubit.parameters.resonance_frequency_ge, np.min(amplitude), np.max(amplitude), colors='r');
+    # ax[1].vlines(qubit.parameters.resonance_frequency_ge, np.min(phase), np.max(phase), colors='r')
+    fig.tight_layout()
+    return fig, ax
+
+def plot_flux_sweep_full_spectrum(exp, session, qubit, **kwargs):
+    my_results = session.get_results()
+    my_acquired_results = my_results.acquired_results['results']
+    drive_AWG_freqs = my_acquired_results.axis[2]
+    drive_lo_array = my_acquired_results.axis[1]
+    drive_freqs = np.empty((0))
+    for drive_lo in drive_lo_array:
+        drive_freqs = np.append(drive_freqs, drive_lo + drive_AWG_freqs,)
+
+    currents = my_acquired_results.axis[0][0]
+
+    data = my_acquired_results.data
+    freq_shape = my_acquired_results.data.shape[1]*my_acquired_results.data.shape[2]
+    shape_tuple = (currents.shape[0], freq_shape)
+    IQ_data = data.reshape(shape_tuple)
+    IQ_data = IQ_data - np.mean(IQ_data, axis=1)[:,None]
+    amplitude = np.abs(IQ_data)
+    # phase = np.angle(IQ_data)
+    phase = adjust_phase(IQ_data, drive_freqs, qubit.parameters.readout_integration_delay)
     phase = phase - np.mean(phase, axis=1)[:, None]
-    fig, ax = plt.subplots(1,2, figsize=(16,9))
+    fig, ax = plt.subplots(1,2, figsize=(8,5))
     cmap0 = ax[0].pcolor(currents*1e6,
-        freqs,
+        drive_freqs,
         amplitude.T,
+        vmin=0,
+        vmax=5,
         shading='nearest',)
-        # vmax=3)
-        # vmax=0.5)
-        # vmin=0,
-        # vmax=1)
     ax[0].set_title(f'{qubit.uid} Two Tone Spectroscopy')
     ax[0].set_xlabel('Currents (uA)')
     ax[0].set_ylabel('Drive Frequency (GHz)')
     cmap1 = ax[1].pcolor(currents*1e6,
-        freqs,
+        drive_freqs,
         phase.T,
         shading='nearest',)
-        # vmin=,
-        # vmax=
-    # ax[0].axvline(x=-25, color='red', linestyle='--', linewidth=2)
     fig.colorbar(cmap0, ax=ax[0])
     ax[1].set_title(f'{qubit.uid} Two Tone Spectroscopy')
     ax[1].set_xlabel('Currents (uA)')
     ax[1].set_ylabel('Drive Frequency (GHz)')
     fig.colorbar(cmap1, ax=ax[1])
     fig.tight_layout()
-    
+    return fig, ax
+
+def plot_flux_sweep_spectrum(exp, session, qubit, **kwargs):
+    my_results = session.get_results()
+    my_acquired_results = my_results.acquired_results['results']
+    drive_freqs = my_acquired_results.axis[1]+exp.signals[f'{qubit.uid}/drive_line'].calibration.local_oscillator.frequency
+    currents = my_acquired_results.axis[0][0]
+    data = my_acquired_results.data
+    ro_freqs = my_acquired_results.axis[0][1]+exp.signals[f'{qubit.uid}/measure_line'].calibration.local_oscillator.frequency
+    # freqs = np.tile(freqs, (201, 1)).T
+    # print(freqs[0,:])
+
+    shape_tuple = (currents.shape[0], drive_freqs.shape[0])
+    IQ_data = data.reshape(shape_tuple)
+    IQ_data = IQ_data - np.mean(IQ_data, axis=1)[:,None]
+    amplitude = np.abs(IQ_data)
+    phase = np.angle(IQ_data)
+    # phase = adjust_phase(IQ_data, freqs, qubit.parameters.readout_integration_delay)
+    phase = phase - np.mean(phase, axis=1)[:, None]
+    fig, ax = plt.subplots(1,2, figsize=(8,5))
+    cmap0 = ax[0].pcolor(currents*1e6,
+        drive_freqs,
+        amplitude.T,
+        shading='nearest',)
+    ax[0].set_title(f'{qubit.uid} Two Tone Spectroscopy')
+    ax[0].set_xlabel('Currents (uA)')
+    ax[0].set_ylabel('Drive Frequency (GHz)')
+    cmap1 = ax[1].pcolor(currents*1e6,
+        drive_freqs,
+        phase.T,
+        shading='nearest',)
+    fig.colorbar(cmap0, ax=ax[0])
+    ax[1].set_title(f'{qubit.uid} Two Tone Spectroscopy')
+    ax[1].set_xlabel('Currents (uA)')
+    ax[1].set_ylabel('Drive Frequency (GHz)')
+    fig.colorbar(cmap1, ax=ax[1])
+    fig.tight_layout()
     return fig, ax
 
 def plot_dual_flux_sweep(exp, session, qubit, **kwargs):
@@ -454,112 +515,4 @@ def plot_T2_echo(exp, session, qubit, **kwargs):
         print(f"Fitted parameters (phase): {popt_phase}")
         print('T2e time ' + str(1/popt_phase[0]*1e6) + ' us') 
     except: pass
-    return fig, ax
-
-def plot_full_spectrum(exp, session, qubit, **kwargs):
-    '''Plots a full spectrum'''
-    my_results = session.get_results()
-    my_acquired_results = my_results.acquired_results['results']
-    drive_lo_array = my_acquired_results.axis[0]
-    drive_AWG_freqs = my_acquired_results.axis[1]
-    drive_freqs = np.empty((0))
-    for drive_lo in drive_lo_array:
-        drive_freqs = np.append(drive_freqs, drive_lo + drive_AWG_freqs)
-    IQ_data = my_acquired_results.data.ravel()
-    amplitude = np.abs(IQ_data)
-    phase = np.unwrap(np.angle(IQ_data))
-
-    fig, ax = plt.subplots(2,1, figsize=(8,6))
-    ax[0].plot(drive_freqs, amplitude)
-    ax[0].set_title(f'{qubit.uid} Spectrum')
-    ax[0].set_xlabel('Frequency (GHz)')
-    ax[0].set_ylabel('Amplitude')
-    # ax[0].set_ylim(1, 5)
-    ax[0].grid()
-    ax[1].plot(drive_freqs, phase)
-    ax[1].set_title(f'{qubit.uid} Spectrum')
-    ax[1].set_xlabel('Drive Frequency (GHz)')
-    ax[1].set_ylabel('Phase')
-    # ax[1].set_ylim(2, 2.7)
-    ax[1].grid()
-    fig.tight_layout()
-    return fig, ax
-
-def plot_flux_sweep_full_spectrum(exp, session, qubit, **kwargs):
-    my_results = session.get_results()
-    my_acquired_results = my_results.acquired_results['results']
-    drive_AWG_freqs = my_acquired_results.axis[2]
-    drive_lo_array = my_acquired_results.axis[1]
-    drive_freqs = np.empty((0))
-    for drive_lo in drive_lo_array:
-        drive_freqs = np.append(drive_freqs, drive_lo + drive_AWG_freqs,)
-
-    currents = my_acquired_results.axis[0][0]
-
-    data = my_acquired_results.data
-    freq_shape = my_acquired_results.data.shape[1]*my_acquired_results.data.shape[2]
-    shape_tuple = (currents.shape[0], freq_shape)
-    IQ_data = data.reshape(shape_tuple)
-    IQ_data = IQ_data - np.mean(IQ_data, axis=1)[:,None]
-    amplitude = np.abs(IQ_data)
-    # phase = np.angle(IQ_data)
-    phase = adjust_phase(IQ_data, drive_freqs, qubit.parameters.readout_integration_delay)
-    phase = phase - np.mean(phase, axis=1)[:, None]
-    fig, ax = plt.subplots(1,2, figsize=(8,5))
-    cmap0 = ax[0].pcolor(currents*1e6,
-        drive_freqs,
-        amplitude.T,
-        vmin=0,
-        vmax=5,
-        shading='nearest',)
-    ax[0].set_title(f'{qubit.uid} Two Tone Spectroscopy')
-    ax[0].set_xlabel('Currents (uA)')
-    ax[0].set_ylabel('Drive Frequency (GHz)')
-    cmap1 = ax[1].pcolor(currents*1e6,
-        drive_freqs,
-        phase.T,
-        shading='nearest',)
-    fig.colorbar(cmap0, ax=ax[0])
-    ax[1].set_title(f'{qubit.uid} Two Tone Spectroscopy')
-    ax[1].set_xlabel('Currents (uA)')
-    ax[1].set_ylabel('Drive Frequency (GHz)')
-    fig.colorbar(cmap1, ax=ax[1])
-    fig.tight_layout()
-    return fig, ax
-
-def plot_flux_sweep_spectrum(exp, session, qubit, **kwargs):
-    my_results = session.get_results()
-    my_acquired_results = my_results.acquired_results['results']
-    drive_freqs = my_acquired_results.axis[1]+exp.signals[f'{qubit.uid}/drive_line'].calibration.local_oscillator.frequency
-    currents = my_acquired_results.axis[0][0]
-    data = my_acquired_results.data
-    ro_freqs = my_acquired_results.axis[0][1]+exp.signals[f'{qubit.uid}/measure_line'].calibration.local_oscillator.frequency
-    # freqs = np.tile(freqs, (201, 1)).T
-    # print(freqs[0,:])
-
-    shape_tuple = (currents.shape[0], drive_freqs.shape[0])
-    IQ_data = data.reshape(shape_tuple)
-    IQ_data = IQ_data - np.mean(IQ_data, axis=1)[:,None]
-    amplitude = np.abs(IQ_data)
-    phase = np.angle(IQ_data)
-    # phase = adjust_phase(IQ_data, freqs, qubit.parameters.readout_integration_delay)
-    phase = phase - np.mean(phase, axis=1)[:, None]
-    fig, ax = plt.subplots(1,2, figsize=(8,5))
-    cmap0 = ax[0].pcolor(currents*1e6,
-        drive_freqs,
-        amplitude.T,
-        shading='nearest',)
-    ax[0].set_title(f'{qubit.uid} Two Tone Spectroscopy')
-    ax[0].set_xlabel('Currents (uA)')
-    ax[0].set_ylabel('Drive Frequency (GHz)')
-    cmap1 = ax[1].pcolor(currents*1e6,
-        drive_freqs,
-        phase.T,
-        shading='nearest',)
-    fig.colorbar(cmap0, ax=ax[0])
-    ax[1].set_title(f'{qubit.uid} Two Tone Spectroscopy')
-    ax[1].set_xlabel('Currents (uA)')
-    ax[1].set_ylabel('Drive Frequency (GHz)')
-    fig.colorbar(cmap1, ax=ax[1])
-    fig.tight_layout()
     return fig, ax
