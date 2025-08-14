@@ -630,7 +630,7 @@ def dual_flux_sweep(
             with dsl.acquire_loop_rt(
                 name='Real Time Loop',
                 count=averages,
-                acquisition_type=AcquisitionType.SPECTROSCOPY_IQ,
+                acquisition_type=AcquisitionType.SPECTROSCOPY,
                 averaging_mode=AveragingMode.CYCLIC,
             ):
                 qops.measure(q, 'results')

@@ -244,6 +244,9 @@ def plot_flux_sweep_full_spectrum(exp, session, qubit, **kwargs):
         drive_freqs = np.append(drive_freqs, drive_lo + drive_AWG_freqs,)
 
     currents = my_acquired_results.axis[0][0]
+    ro_freqs = my_acquired_results.axis[0][1] + exp.signals[f'{qubit.uid}/measure_line'].calibration.local_oscillator.frequency
+    repeated_ro_freqs = np.repeat(ro_freqs[:, np.newaxis], drive_freqs.size, axis=1)
+    print(repeated_ro_freqs)
 
     data = my_acquired_results.data
     freq_shape = my_acquired_results.data.shape[1]*my_acquired_results.data.shape[2]
@@ -251,9 +254,18 @@ def plot_flux_sweep_full_spectrum(exp, session, qubit, **kwargs):
     IQ_data = data.reshape(shape_tuple)
     IQ_data = IQ_data - np.mean(IQ_data, axis=1)[:,None]
     amplitude = np.abs(IQ_data)
-    # phase = np.angle(IQ_data)
-    phase = adjust_phase(IQ_data, drive_freqs, qubit.parameters.readout_integration_delay)
+    phase = np.angle(IQ_data)
+    print(drive_freqs.shape)
+    phase=np.empty((IQ_data.shape[1],0))
+    # for i, data in enumerate(IQ_data):
+        # IQ_row = data
+        # phase_row = adjust_phase(IQ_row, ro_freqs[i], 90e-9)
+        # np.append(phase, phase_row, axis=1)
+    # phase = adjust_phase(IQ_data, repeated_ro_freqs, 900e-9) #exp.signals[f'{qubit.uid}/acquire_line'].calibration.port_delay)
     phase = phase - np.mean(phase, axis=1)[:, None]
+    phase = np.unwrap(np.angle(IQ_data))
+    print(phase)
+
     fig, ax = plt.subplots(1,2, figsize=(8,5))
     cmap0 = ax[0].pcolor(currents*1e6,
         drive_freqs,
@@ -334,15 +346,15 @@ def plot_dual_flux_sweep(exp, session, qubit, **kwargs):
                 db_data.T,
                 shading='nearest')
     ax[0].set_title(f'{qubit.uid} Resonator 2D Flux Response')
-    ax[0].set_xlabel(f'{outer_name} (uA)')
-    ax[0].set_ylabel(f'{inner_name} (uA)')
+    ax[0].set_xlabel(f'{outer_name}')
+    ax[0].set_ylabel(f'{inner_name}')
     cmap1 = ax[1].pcolor(outer_currents*1e6,
                 inner_current*1e6,
                 phase_data.T,
                 shading='nearest')
     ax[1].set_title(f'{qubit.uid} Resonator 2D Flux Response')
-    ax[1].set_xlabel(f'{outer_name} (uA)')
-    ax[1].set_ylabel(f'{inner_name} (uA)')
+    ax[1].set_xlabel(f'{outer_name}')
+    ax[1].set_ylabel(f'{inner_name}')
     fig.colorbar(cmap0, ax=ax[0])
     fig.colorbar(cmap1, ax=ax[1])
     fig.tight_layout()
@@ -412,18 +424,22 @@ def plot_T1_exp(exp, session, qubit, **kwargs):
     phase = np.unwrap(np.angle(my_acquired_results.data))
     phase = phase - np.mean(phase)
 
-    popt, pcov = exponential_decay.fit(time_delay, amplitude, 1/200e-6, 2, 10, plot=False)
-
     fig, ax = plt.subplots(1,1, figsize=(4,4))
     ax.plot(time_delay*1e6, amplitude, '.k')
-    ax.plot(delay_plot*1e6, exponential_decay(delay_plot, *popt), '-r');
     ax.set_title(f"{qubit.uid}'s T1")
     ax.set_xlabel('Delay (us)')
     ax.set_ylabel('Amplitude')
     ax.grid()
 
-    print(f"Fitted parameters: {popt}")
-    print('T1 time ' + str(1/popt[0]*1e6) + ' us') 
+    try:
+        popt, pcov = exponential_decay.fit(time_delay, amplitude, 1/200e-6, 2, 10, plot=False)
+        ax.plot(delay_plot*1e6, exponential_decay(delay_plot, *popt), '-r');
+        print(f"Fitted parameters: {popt}")
+        print('T1 time ' + str(1/popt[0]*1e6) + ' us') 
+    except:
+        print('Could not find fit')
+
+
 
     return fig, ax
 
