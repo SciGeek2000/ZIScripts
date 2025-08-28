@@ -1,17 +1,14 @@
-**/.ipynb_checkpoints/*
+.ipynb_checkpoints/
 
-**/.virtual_documents/
+.virtual_documents/
 
-LabOneQ/laboneq_output/**
+laboneq_output/*
 
-**/*.log
+**.log
 
 LabOneQ/later_reorganization/data/*
 
 LabOneQ/data/*
 
-**/__pycache__/
-
-**/.virtual_documents/*
-
+__pycache__/
 

@@ -4,17 +4,17 @@ from qcodes.instrument_drivers.yokogawa.GS200 import GS200
 if 'yoko_dict' not in globals():
     yoko_dict = dict()
 try:
-    name = 'dc'
+    name = 'coil'
     if name not in yoko_dict:
-        yoko = GS200(name, address = 'TCPIP0::192.168.4.208::inst0::INSTR',)
+        yoko = GS200(name, address = 'TCPIP0::192.168.4.157::inst0::INSTR',)
         yoko_dict[name] = yoko
 except Exception as e:
     print(e)
 try:
-    name = 'coil'
+    name = 'dc'
     if name not in yoko_dict:
-        dc = GS200(name, address = 'TCPIP0::192.168.4.157::inst0::INSTR',)
-        yoko_dict[name] = dc
+        yoko = GS200(name, address = 'TCPIP0::192.168.4.208::inst0::INSTR',)
+        yoko_dict[name] = yoko
 except Exception as e:
     print(e)
 
