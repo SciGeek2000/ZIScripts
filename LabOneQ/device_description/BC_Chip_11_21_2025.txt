@@ -1,62 +1,16 @@
-
-
-
-
-
-
-
-
 # Wiring Mapping
 
-#Readout in:       C6
-#Readout out:      B4
+#Readout in:       C7
+#Readout out:      B2
 
-# T0 Dr: GKP2 Dr:  C5
-# T1 Dr: F0 Dr:    A1
-# F0 DC: GKP3 DC:  DC4
-# F0 Drive:        A1
-# F1 Drive:        C3
-# F1 DC: GKP1 DC:  DC3
-# GKP 1 DC:        DC3
-# GKP 1 Fast Flux: TERMINATED
-# GKP 1 Drive:     A5 (not connected)
-# GKP 2 DC:        DC2
-# GKP 2 Fast Flux: A16
-# GKP 2 Drive:     C5
-# GKP 3 DC:        DC4
-# GKP 3 Fast Flux: A14
-# GKP 3 Drive:     A6
+# T_BC Dr: C2
 
-# Bottom Lines: (A1, A5, A6, A14, A16, C3, C5, C6)
-# Bottom DC:    (DC2, DC3, DC4)
-
-# Sacrificing Connectivity to GKP1 (A5, DC3)
-
-# Wired Lines: (A1, A6, A14, A16, C3, C5)
-# Wired DC:   (DC2, DC4)
-
-# C5 IS NOT CONNECTED AT THE TOP OF THE FRIDGE!
- 
-# CH0: A6
-# CH1: A16
+# CH0: C2
+# CH1: 
 # CH2: 
-# CH3: C3
-# CH4: A1
-# CH5: A14
-
-# T0 Drive: GKP 2 Drive : CH2 (!!)
-# T1 Drive: F0 Drive : CH4
-# F0 DC:    DC4
-# F0 Dr:    CH4
-# F1 Dr:    CH3
-# F1 DC:    DC3
-# GKP 1 FF: TERMINATED
-# GKP 1 Dr: NOT CONNECTED
-# GKP 2 FF: CH1
-# GKP 2 Dr: CH2 (!!)
-# GKP 3 FF: CH5
-# GKP 3 Dr: CH0
-
+# CH3:
+# CH4:
+# CH5:
 
 instruments:
   SHFQC:
@@ -67,12 +21,12 @@ instruments:
 
 connections:
   device_shfqc:
-    - acquire_signal: T0/acquire_line
+    - acquire_signal: T_BC/acquire_line
       ports: [QACHANNELS/0/INPUT]
-    - iq_signal: T0/measure_line
+    - iq_signal: T_BC/measure_line
       ports: [QACHANNELS/0/OUTPUT]
-    - iq_signal: T0/drive_line
-      ports: SGCHANNELS/2/OUTPUT
+    - iq_signal: T_BC/drive_line
+      ports: SGCHANNELS/0/OUTPUT
 
     - acquire_signal: T1/acquire_line
       ports: [QACHANNELS/0/INPUT]

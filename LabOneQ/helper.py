@@ -12,6 +12,7 @@ import datetime
 from datetime import date
 import os
 import numpy as np
+from scipy.stats import linregress
 
 def data_directory_update():
     date = datetime.date.today()
@@ -61,12 +62,15 @@ def non_redund_save_csv(csv_data, name):
         else:
             i += 1
 
-def adjust_phase(
-        IQ_data: np.ndarray, frequency: np.ndarray, 
-        electrical_delay: float,
-        ) -> np.ndarray:
-    '''Adjusts the phase to be flattened and unwrapped'''
-    adjusted_complex = np.exp(1j*electrical_delay*2*np.pi*frequency)*IQ_data
-    flattened_angle = np.unwrap(np.angle(adjusted_complex))
-    flattened_angle = flattened_angle - np.mean(flattened_angle)
-    return flattened_angle
+def remove_local_phase_delay(IQ_data: np.ndarray, frequency: np.ndarray, delay):
+    '''Removes IQ bias, zeros phase delay (unique to that sweep), and returns data as cleaned IQ arrays'''
+    IQ_data = IQ_data #- np.mean(IQ_data)
+    cleaned_complex = np.exp(1j*delay*2*np.pi*frequency)*IQ_data
+    return cleaned_complex
+
+# The procedure I will follow for phase will be:
+#   1.) Center the IQ blob by just removing the average of the data. NOTE! This was not something I was doing and accounts for net assymetric chain/mesurement.
+#   2.) Find the np.angle and np.unwrap of the data.
+#   3.) Find a linear fit for this region. This may be a slighly different electrical delay due to the TWPA's local frequency phase delay.
+#   4.) Subtract out the linear phase background. NOTE! Do not then zero this phase data.
+#   5.) Plot this data. This should then form nice circles in IQ space associated with the resonator itself.

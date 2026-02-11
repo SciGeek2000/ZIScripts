@@ -21,7 +21,7 @@ def analyze_flux_sweep_trace(exp, session, qubit, **kwargs): # [ ] Normalize amp
     freqs = my_acquired_results.axis[1] + exp.signals[f'{qubit.uid}/measure_line'].calibration.local_oscillator.frequency
     IQ_data = my_acquired_results.data
     amplitude = np.abs(IQ_data)
-    phase = adjust_phase(IQ_data, freqs, exp.signals[f'{qubit.uid}/acquire_line'].calibration.port_delay)
+    phase = remove_local_phase_delay(IQ_data, freqs, exp.signals[f'{qubit.uid}/acquire_line'].calibration.port_delay)
     currents = my_acquired_results.axis[0]*1e6
     tracked_resonator = np.empty(amplitude.shape[0])
 

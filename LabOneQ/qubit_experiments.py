@@ -89,8 +89,8 @@ def global_trace(
     ro_lo_sweep = LinearSweepParameter(
         axis_name='ro lo sweep',
         start=4e9,
-        stop=7e9,
-        count=4
+        stop=8e9,
+        count=5,
     )
     ro_rf_sweep = LinearSweepParameter(
         axis_name='ro rf sweep',

@@ -49,17 +49,16 @@ def plot_exp(exp: Experiment, session: Session, qubit, **kwargs):
 
 def plot_global_resonator_trace(exp, session, qubit):
     my_results = session.get_results() #a deep copy of session.results
-    # Extracts data from the exp.acquire method with the same key name
     my_acquired_results = my_results.acquired_results['results']
-    
     lo_array = my_acquired_results.axis[0]
     AWG_freqs = my_acquired_results.axis[1]
     freqs = np.empty((0))
     for lo in lo_array:
         freqs = np.append(freqs, lo + AWG_freqs,)
     IQ_data = my_acquired_results.data.ravel()
+    IQ_data = remove_local_phase_delay(IQ_data, freqs, exp.signals[f'{qubit.uid}/acquire_line'].calibration.port_delay)
     amplitude = np.abs(IQ_data)
-    phase = adjust_phase(IQ_data, freqs, exp.signals[f'{qubit.uid}/acquire_line'].calibration.port_delay)
+    phase = np.unwrap(np.angle(IQ_data))
 
     # Plot
     fig, ax = plt.subplots(2,1, figsize=(8,6))
@@ -83,17 +82,18 @@ def plot_local_resonator_trace(exp, session, qubit):
     # For plotting current vs single resonator point
     freqs = my_acquired_results.axis[0] + exp.signals[f'{qubit.uid}/measure_line'].calibration.local_oscillator.frequency
     IQ_data = my_acquired_results.data
+    IQ_data = remove_local_phase_delay(IQ_data, freqs, exp.signals[f'{qubit.uid}/acquire_line'].calibration.port_delay)
     amplitude = np.abs(IQ_data)
-    phase = adjust_phase(IQ_data, freqs, exp.signals[f'{qubit.uid}/acquire_line'].calibration.port_delay)
+    phase = np.unwrap(np.angle(IQ_data))
 
     # Plots
     fig, ax = plt.subplots(2,1, figsize=(8,6))
-    ax[0].plot(freqs, amplitude)
+    ax[0].scatter(freqs, amplitude)
     ax[0].set_title(f'{qubit.uid} Near Resonator Pulsed Trace')
     ax[0].set_xlabel('Frequency (GHz)')
     ax[0].set_ylabel('Amplitude (a.u.)')
     ax[0].grid()
-    ax[1].plot(freqs, phase)
+    ax[1].scatter(freqs, phase)
     ax[1].set_title(f'{qubit.uid} Near Resonator Pulsed Trace')
     ax[1].set_xlabel('Frequency (GHz)')
     ax[1].set_ylabel('Phase')
@@ -103,23 +103,23 @@ def plot_local_resonator_trace(exp, session, qubit):
 
 def plot_punchout(exp, session, qubit, data_type:str='Phase'):
     my_results = session.get_results() #a deep copy of session.results
-    # Extracts data from the exp.acquire method with the same key name
     my_acquired_results = my_results.acquired_results['results']
-
-    # For plotting punchout
     freqs = my_acquired_results.axis[1]+exp.signals[f'{qubit.uid}/measure_line'].calibration.local_oscillator.frequency
     IQ_data = my_acquired_results.data
+    IQ_data = remove_local_phase_delay(IQ_data, freqs, exp.signals[f'{qubit.uid}/acquire_line'].calibration.port_delay)
     normalized_amp_data = np.divide(np.abs(IQ_data).T, np.mean(np.abs(IQ_data), axis=1))
     normalized_dB_data = np.log10(normalized_amp_data)
-    phase = adjust_phase(IQ_data, freqs, exp.signals[f'{qubit.uid}/acquire_line'].calibration.port_delay)
+    amplitude = np.abs(IQ_data)
+    phase = np.unwrap(np.angle(IQ_data))
+    phase = np.subtract(phase, np.expand_dims(np.mean(phase, axis=1), axis=1))
 
     amplitude = my_acquired_results.axis[0]
     power = 10*np.log10(amplitude**2)+exp.signals[f'{qubit.uid}/measure_line'].calibration.range
 
     if data_type=='Phase':
-        graphing_data = normalized_dB_data
-    elif data_type=='Amplitude':
         graphing_data = phase.T
+    elif data_type=='Amplitude':
+        graphing_data = normalized_dB_data
     else:
         raise Exception('Not a valid data_type str')
 
@@ -146,16 +146,16 @@ def plot_punchout(exp, session, qubit, data_type:str='Phase'):
 
 def plot_flux_sweep_trace(exp, session, qubit): 
     my_results = session.get_results() #a deep copy of session.results
-    # Extracts data from the exp.acquire method with the same key name
     my_acquired_results = my_results.acquired_results['results']
-    # For plotting current vs single resonator point
-    # For plotting 1D flux sweep
     freqs = my_acquired_results.axis[1] + exp.signals[f'{qubit.uid}/measure_line'].calibration.local_oscillator.frequency
     IQ_data = my_acquired_results.data
+    IQ_data = remove_local_phase_delay(IQ_data, freqs, exp.signals[f'{qubit.uid}/acquire_line'].calibration.port_delay)
     amplitude = np.abs(IQ_data)
-    phase = adjust_phase(IQ_data, freqs, exp.signals[f'{qubit.uid}/acquire_line'].calibration.port_delay)
-    currents = my_acquired_results.axis[0]*1e6
+    phase = np.unwrap(np.angle(IQ_data))
+    phase = np.subtract(phase, np.expand_dims(np.mean(phase, axis=1), axis=1))
 
+    currents = my_acquired_results.axis[0]*1e6
+    
     fig, ax = plt.subplots(1,2, figsize=(15,6))
     cmap0 = ax[0].pcolor(currents,
         freqs,
@@ -254,24 +254,15 @@ def plot_flux_sweep_full_spectrum(exp, session, qubit, **kwargs):
     IQ_data = data.reshape(shape_tuple)
     IQ_data = IQ_data - np.mean(IQ_data, axis=1)[:,None]
     amplitude = np.abs(IQ_data)
-    phase = np.angle(IQ_data)
-    print(drive_freqs.shape)
-    phase=np.empty((IQ_data.shape[1],0))
-    # for i, data in enumerate(IQ_data):
-        # IQ_row = data
-        # phase_row = adjust_phase(IQ_row, ro_freqs[i], 90e-9)
-        # np.append(phase, phase_row, axis=1)
-    # phase = adjust_phase(IQ_data, repeated_ro_freqs, 900e-9) #exp.signals[f'{qubit.uid}/acquire_line'].calibration.port_delay)
-    phase = phase - np.mean(phase, axis=1)[:, None]
+    IQ_data = remove_local_phase_delay(IQ_data, np.tile(ro_freqs, (np.shape(IQ_data)[1], 1)).T, exp.signals[f'{qubit.uid}/acquire_line'].calibration.port_delay)
     phase = np.unwrap(np.angle(IQ_data))
-    print(phase)
 
     fig, ax = plt.subplots(1,2, figsize=(8,5))
     cmap0 = ax[0].pcolor(currents*1e6,
         drive_freqs,
         amplitude.T,
-        vmin=0,
-        vmax=5,
+        # vmin=0,
+        # vmax=5,
         shading='nearest',)
     ax[0].set_title(f'{qubit.uid} Two Tone Spectroscopy')
     ax[0].set_xlabel('Currents (uA)')
@@ -425,14 +416,14 @@ def plot_T1_exp(exp, session, qubit, **kwargs):
     phase = phase - np.mean(phase)
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
-    ax.plot(time_delay*1e6, amplitude, '.k')
+    ax.plot(time_delay*1e6, phase, '.k')
     ax.set_title(f"{qubit.uid}'s T1")
     ax.set_xlabel('Delay (us)')
-    ax.set_ylabel('Amplitude')
+    ax.set_ylabel('Phase')
     ax.grid()
 
     try:
-        popt, pcov = exponential_decay.fit(time_delay, amplitude, 1/200e-6, 2, 10, plot=False)
+        popt, pcov = exponential_decay.fit(time_delay, phase, 1/50e-6, 0.08, 0.1, plot=False)
         ax.plot(delay_plot*1e6, exponential_decay(delay_plot, *popt), '-r');
         print(f"Fitted parameters: {popt}")
         print('T1 time ' + str(1/popt[0]*1e6) + ' us') 
