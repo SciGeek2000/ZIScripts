@@ -92,6 +92,7 @@ def plot_local_resonator_trace(exp, session, qubit):
     ax[0].set_title(f'{qubit.uid} Near Resonator Pulsed Trace')
     ax[0].set_xlabel('Frequency (GHz)')
     ax[0].set_ylabel('Amplitude (a.u.)')
+    ax[0].autoscale(enable=True, axis='y', tight=False)
     ax[0].grid()
     ax[1].scatter(freqs, phase)
     ax[1].set_title(f'{qubit.uid} Near Resonator Pulsed Trace')

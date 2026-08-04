@@ -1,0 +1,112 @@
+# Wiring Mapping
+
+#Readout in:       C3
+#Readout out:      B3
+
+# T0 Dr: GKP2 Dr:  
+# T1 Dr: F0 Dr:    
+# F0 DC: GKP3 DC:  
+# F0 Drive:        
+# F1 Drive:        
+# F1 DC: 
+# GKP 1 DC:        
+# GKP 1 Fast Flux: 
+# GKP 1 Drive:     
+# GKP 2 DC:        
+# GKP 2 Fast Flux: 
+# GKP 2 Drive:     
+# GKP 3 DC:        
+# GKP 3 Fast Flux: 
+# GKP 3 Drive:     
+
+# Bottom Lines: 
+# Bottom DC:    
+
+# Wired Lines: (A1, A6, A14, A16, C3, C5)
+# Wired DC:   (DC2, DC4)
+
+# CH0: 
+# CH1: 
+# CH2: 
+# CH3: 
+# CH4: 
+# CH5: D2
+
+# T0 Drive: 
+# T1 Drive: 
+# F0 DC:    
+# F0 Dr:    
+# F1 Dr:    
+# F1 DC:    
+# GKP 1 FF: 
+# GKP 1 Dr: 
+# GKP 2 FF: 
+# GKP 2 Dr: 
+# GKP 3 FF: 
+# GKP 3 Dr: 
+
+instruments:
+  SHFQC:
+  - address: DEV12247
+    uid: device_shfqc
+    interface: 1gbe
+    options: SHFQC/PLUS/QC6CH
+
+connections:
+  device_shfqc:
+    - acquire_signal: T0/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: T0/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: T0/drive_line
+      ports: SGCHANNELS/2/OUTPUT
+
+    - acquire_signal: T1/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: T1/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: T1/drive_line
+      ports: SGCHANNELS/4/OUTPUT
+
+    - acquire_signal: F0/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: F0/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: F0/drive_line
+      ports: SGCHANNELS/3/OUTPUT # Should be SGCHANNEL/4/OUTPUT
+    - iq_signal: F0/fast_flux
+      ports: SGCHANNELS/5/OUTPUT # DUMMY PORT
+
+    - acquire_signal: F1/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: F1/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: F1/drive_line
+      ports: SGCHANNELS/3/OUTPUT
+
+    - acquire_signal: GKP1/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: GKP1/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: GKP1/drive_line
+      ports: SGCHANNELS/5/OUTPUT # DUMMY PORT
+    - iq_signal: GKP1/flux_drive_line
+      ports: SGCHANNELS/1/OUTPUT # DUMMY PORT
+
+    - acquire_signal: GKP2/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: GKP2/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: GKP2/drive_line
+      ports: SGCHANNELS/2/OUTPUT
+    - iq_signal: GKP2/fast_flux
+      ports: SGCHANNELS/1/OUTPUT
+
+    - acquire_signal: GKP3/acquire_line
+      ports: [QACHANNELS/0/INPUT]
+    - iq_signal: GKP3/measure_line
+      ports: [QACHANNELS/0/OUTPUT]
+    - iq_signal: GKP3/drive_line
+      ports: SGCHANNELS/0/OUTPUT
+    - iq_signal: GKP3/fast_flux
+      ports: SGCHANNELS/5/OUTPUT
