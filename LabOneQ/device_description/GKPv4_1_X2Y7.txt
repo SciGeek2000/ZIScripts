@@ -47,7 +47,7 @@
 
 instruments:
   SHFQC:
-  - address: DEV12247
+  - address: DEV12237
     uid: device_shfqc
     interface: 1gbe
     options: SHFQC/PLUS/QC6CH

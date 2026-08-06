@@ -7,7 +7,7 @@ if 'yoko_dict' not in globals():
 try:
     name = 'DC1'
     if name not in yoko_dict:
-        yoko = YokogawaGS200(name, address='TCPIP0:192.168.1.76::inst0::INSTR')
+        yoko = YokogawaGS200(name, address='TCPIP0::192.168.1.76::inst0::INSTR')
         # yoko = GS200(name, address = 'TCPIP0::192.168.1.76::inst0::INSTR',)
         yoko_dict[name] = yoko
 except Exception as e:
