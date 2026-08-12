@@ -3,10 +3,59 @@ from helper import *
 from qops_helper import *
 from qelement_helper import *
 from yoko_helper import change_current, get_current
+from RandS_helper import RandS_set_frequency, RandS_set_power
 
 # NOTE: All dsl.qubit_experiments naturally update the qubit parameters with the qubit.calibration() method
 
 # -- Defining experiments --
+@dsl.qubit_experiment(name='TWPA Optimization')
+def TWPA_Optimize(
+    q: QuantumElement,
+    lower_power,
+    upper_power,
+    power_points,
+    lower_freq,
+    upper_freq,
+    freq_points,
+    averages=2**8,
+    silence=False,
+    qops: dsl.QuantumOperations=CustomGeneralOperations()
+):
+    '''A TWPA optimization experiment'''
+
+    power_sweep = LinearSweepParameter(
+        f'Sweeping power',
+        lower_power,
+        upper_power,
+        power_points,
+    )
+
+    freq_sweep = LinearSweepParameter(
+        f'Sweeping frequency',
+        lower_freq,
+        upper_freq,
+        freq_points,
+    )
+
+    with dsl.sweep(
+        name=f'Current Sweep of Power (outer)',
+        parameter=power_sweep,
+    ):
+        dsl.call(RandS_set_power, power=power_sweep, silence=silence)
+        with dsl.sweep(
+            name=f'Current Sweep of Frequency (inner)',
+            parameter=freq_sweep,
+        ):
+            dsl.call(RandS_set_frequency, freq=freq_sweep, silence=False)
+            with dsl.acquire_loop_rt(
+                name='Real Time Loop',
+                count=averages,
+                acquisition_type=AcquisitionType.SPECTROSCOPY,
+                averaging_mode=AveragingMode.CYCLIC,
+            ):
+                qops.measure(q, 'results')
+    return
+
 @dsl.qubit_experiment(name='Local Resonator Trace')
 def local_trace(
     q: QuantumElement,

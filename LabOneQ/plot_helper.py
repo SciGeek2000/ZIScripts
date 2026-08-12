@@ -7,6 +7,9 @@ from qubit_experiments import *
 
 def plot_exp(exp: Experiment, session: Session, qubit, **kwargs):
     match exp.uid:
+        case 'TWPA Optimization':
+            fig, ax = plot_twpa_optimization(exp, session, qubit, **kwargs)
+            return fig, ax
         case 'Global Trace':
             fig, ax = plot_global_resonator_trace(exp, session, qubit, **kwargs)
             return fig, ax
@@ -46,6 +49,42 @@ def plot_exp(exp: Experiment, session: Session, qubit, **kwargs):
         case 'T2 Echo':
             fig, ax = plot_T2_echo(exp, session, qubit, **kwargs)
             return fig, ax
+
+def plot_twpa_optimization(exp, session, qubit):
+    '''Plots a dual flux sweep (like for GKP)'''
+    my_results = session.get_results()
+    my_acquired_results = my_results.acquired_results['results']
+
+    #plotting resonator over flux
+    amp_data = np.abs(my_acquired_results.data)
+    phase_data = np.angle(my_acquired_results.data)
+    db_data = np.log10(amp_data)
+
+    outer_currents = my_acquired_results.axis[0]
+    outer_name = my_acquired_results.axis_name[0]
+    inner_current = my_acquired_results.axis[1]
+    inner_name = my_acquired_results.axis_name[1]
+
+    fig, ax = plt.subplots(1,2, figsize=(15,6))
+    cmap0 = ax[0].pcolor(outer_currents*1e6,
+                inner_current*1e6,
+                db_data.T,
+                shading='nearest')
+    ax[0].set_title(f'{qubit.uid} Resonator TWPA Response')
+    ax[0].set_xlabel(f'{outer_name}')
+    ax[0].set_ylabel(f'{inner_name}')
+    cmap1 = ax[1].pcolor(outer_currents*1e6,
+                inner_current*1e6,
+                phase_data.T,
+                shading='nearest')
+    ax[1].set_title(f'{qubit.uid} Resonator TWPA Response')
+    ax[1].set_xlabel(f'{outer_name}')
+    ax[1].set_ylabel(f'{inner_name}')
+    fig.colorbar(cmap0, ax=ax[0])
+    fig.colorbar(cmap1, ax=ax[1])
+    fig.tight_layout()
+
+    return fig, ax
 
 def plot_global_resonator_trace(exp, session, qubit):
     my_results = session.get_results() #a deep copy of session.results
@@ -524,3 +563,20 @@ def plot_T2_echo(exp, session, qubit, **kwargs):
         print('T2e time ' + str(1/popt_phase[0]*1e6) + ' us') 
     except: pass
     return fig, ax
+
+
+def update_colorbar_limits(fig, new_min, new_max):
+    """Update colorbar limits for a figure."""
+    updated = False
+
+    # Find and update mappable objects.
+    for ax in fig.get_axes():
+        for child in ax.get_children():
+            if hasattr(child, 'set_clim'):
+                child.set_clim(vmin=new_min, vmax=new_max)
+                updated = True
+
+    if updated:
+        fig.canvas.draw_idle()
+
+    return updated
