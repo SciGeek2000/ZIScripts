@@ -13,3 +13,4 @@ LabOneQ/data/*
 
 __pycache__/
 
+.vscode/
