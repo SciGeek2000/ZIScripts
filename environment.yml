@@ -1,0 +1,36 @@
+name: laboneq-repo
+channels:
+  - conda-forge
+  - defaults
+
+# Create with: conda env create -f environment.yml
+# Activate with: conda activate laboneq-repo
+# The pip section installs LabOne Q and packages that are distributed through PyPI.
+dependencies:
+  - python=3.12
+  - pip
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - pillow
+  - jupyterlab
+  - ipykernel
+  - ipython
+  - ipywidgets
+  - nbformat
+  - pyqt
+  - pip:
+      - laboneq==26.7.0
+      - laboneq-applications==26.7.0
+      - zhinst-core==26.7.1.4
+      - zhinst-toolkit==1.4.0
+      - qcodes==0.58.0
+      - plotly==6.9.0
+      - lmfit==1.3.4
+      - dill==0.4.1
+      - attrs==26.1.0
+      - pyvisa==1.16.2
+      - mpl-point-clicker
+      - tensorflow
+      - pytest

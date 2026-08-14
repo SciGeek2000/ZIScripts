@@ -7,9 +7,14 @@ from qelement_helper import *
 from qops_helper import *
 from qubit_experiments import *
 from scipy.optimize import curve_fit
+from utils.resonator_fitting import (
+    resonator_regression,
+    reflection_resonator_params,
+    resonator_f_to_S,
+)
 import dill
-import numpy as np 
-import matplotlib.pyplot as plt 
+import numpy as np
+import matplotlib.pyplot as plt
 
 def exp_analysis(exp: Experiment, session: Session, qubit, **kwargs):
     match exp.uid:
@@ -17,9 +22,127 @@ def exp_analysis(exp: Experiment, session: Session, qubit, **kwargs):
             analysis = analyze_flux_sweep_trace(exp, session, qubit, **kwargs)
             return analysis
         
-        case '2D Flux Sweep': 
+        case '2D Flux Sweep':
             analysis = analyze_2d_flux_sweep()
-            return analysis 
+            return analysis
+
+        case 'Local Resonator Trace':
+            analysis = analyze_local_resonator_trace(exp, session, qubit, **kwargs)
+            return analysis
+
+def analyze_local_resonator_trace(
+    exp, session, qubit, tau0=80e-9, f0=None, loss='linear', **kwargs
+):
+    '''
+    Fits a 'Local Resonator Trace' experiment (see qubit_experiments.local_trace)
+    to the generic reflection-port resonator model implemented in
+    utils/resonator_fitting.py.
+
+    The fit jointly determines the overall complex amplitude, electrical
+    delay (tau, seeded from tau0), and the resonator pole/zero -- so no
+    manual mean-centering or pre-removal of electrical delay is performed
+    on the raw data beforehand. See the docstring of resonator_regression()
+    for details on the model.
+
+    Arguments:
+        exp: the Experiment object (used to recover the readout LO frequency)
+        session: the LabOneQ Session with results already acquired
+        qubit: the QuantumElement associated with this trace
+        tau0: initial guess (seconds) for the electrical delay used to seed
+            the nonlinear fit. Defaults to 80ns.
+        f0: optional initial guess (Hz) for the resonator frequency. When
+            supplied, it seeds the real parts of the fitted pole and zero.
+        loss: nonlinear-fit objective. ``'linear'`` and ``'quadratic'`` use
+            ordinary least squares; ``'quartic'`` emphasizes large outliers
+            by minimizing the fourth power of the complex residual magnitude.
+
+        Returns a dictionary containing:
+        'params': physical resonator parameter dictionary from
+            reflection_resonator_params (f0, kappa, kappa_int, kappa_ext,
+            Q, Qi, Qe, phi, tau, and _sd uncertainties if available)
+        'covar': raw covariance matrix from the fit
+        'redchi': reduced chi-squared of the fit
+        'freqs': the raw frequency axis (Hz) used for fitting
+        'IQ_data': the raw (unprocessed) complex IQ data used for fitting
+        'fig', 'ax': the 3-panel figure/axes (IQ plane, amplitude, phase)
+    '''
+    my_results = session.get_results()  # a deep copy of session.results
+    my_acquired_results = my_results.acquired_results['results']
+
+    # Raw frequency axis: RF sweep axis plus the fixed readout LO frequency.
+    # Mirrors plot_local_resonator_trace() in plot_helper.py.
+    freqs = my_acquired_results.axis[0] + exp.signals[f'{qubit.uid}/measure_line'].calibration.local_oscillator.frequency
+    IQ_data = np.asarray(my_acquired_results.data)
+
+    # Fit the raw (unprocessed) data directly -- amplitude, delay, and the
+    # circle geometry are all recovered jointly by the nonlinear fit.
+    (A, f_inf, f_zero, tau), covar, redchi = resonator_regression(
+        freqs, IQ_data, tau0=tau0, f0=f0, loss=loss
+    )
+    params = reflection_resonator_params(A, f_inf, f_zero, tau, covar=covar)
+
+    # --- Print fit results ---
+    print(f'{qubit.uid} Local Resonator Trace fit (reflection model):')
+    print(f'  loss = {loss}')
+    print(f'  reduced chi^2 = {redchi:.6g}')
+    for key in ['f0', 'kappa', 'kappa_int', 'kappa_ext', 'Q', 'Qi', 'Qe', 'phi', 'tau']:
+        if key not in params:
+            continue
+        val = params[key]
+        sd_key = f'{key}_sd'
+        if sd_key in params:
+            print(f'  {key:>10} = {val:.6g}  +/-  {params[sd_key]:.3g}')
+        else:
+            print(f'  {key:>10} = {val:.6g}')
+
+    # --- Build a smooth fit curve over the swept span ---
+    f_dense = np.linspace(freqs.min(), freqs.max(), 2001)
+    S_fit = resonator_f_to_S(f_dense, A, f_inf, f_zero, tau)
+
+    amplitude = np.abs(IQ_data)
+    phase = np.unwrap(np.angle(IQ_data))
+    amplitude_fit = np.abs(S_fit)
+    phase_fit = np.unwrap(np.angle(S_fit))
+
+    # --- 3-panel plot: IQ plane, amplitude, phase ---
+    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+
+    ax[0].scatter(np.real(IQ_data), np.imag(IQ_data), s=15, label='data')
+    ax[0].plot(np.real(S_fit), np.imag(S_fit), color='C1', label='fit')
+    ax[0].set_title(f'{qubit.uid} IQ Plane')
+    ax[0].set_xlabel('I (a.u.)')
+    ax[0].set_ylabel('Q (a.u.)')
+    ax[0].set_aspect('equal', adjustable='datalim')
+    ax[0].legend()
+    ax[0].grid()
+
+    ax[1].scatter(freqs, amplitude, s=15, label='data')
+    ax[1].plot(f_dense, amplitude_fit, color='C1', label='fit')
+    ax[1].set_title(f'{qubit.uid} Amplitude')
+    ax[1].set_xlabel('Frequency (Hz)')
+    ax[1].set_ylabel('Amplitude (a.u.)')
+    ax[1].legend()
+    ax[1].grid()
+
+    ax[2].scatter(freqs, phase, s=15, label='data')
+    ax[2].plot(f_dense, phase_fit, color='C1', label='fit')
+    ax[2].set_title(f'{qubit.uid} Phase')
+    ax[2].set_xlabel('Frequency (Hz)')
+    ax[2].set_ylabel('Phase (rad)')
+    ax[2].legend()
+    ax[2].grid()
+
+    fig.tight_layout()
+
+    return {
+        'params': params,
+        'covar': covar,
+        'redchi': redchi,
+        'freqs': freqs,
+        'IQ_data': IQ_data,
+        'fig': fig,
+        'ax': ax,
+    }
 
 def analyze_flux_sweep_trace(exp, session, qubit, **kwargs): # [ ] Normalize amplitude at each frequency value
     '''

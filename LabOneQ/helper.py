@@ -294,15 +294,34 @@ def _save_derived_artifact(raw_run, artifact_writer, artifact_name, extension, a
     return artifact_entry
 
 
-def save_figure_artifact(fig, raw_run, name="plot", data_root="data", format="png"):
-    """Save a figure linked to a previously saved raw run."""
+def save_figure_artifact(fig, raw_run, name="plot", data_root="data", format="html"):
+    """Save a Plotly figure next to and linked to a raw LabOne Q run.
+
+    ``html`` is the default because it preserves Plotly interactivity when the
+    artifact is opened outside the notebook. Static ``png``, ``pdf``, and
+    ``svg`` exports require the optional ``kaleido`` package.
+    """
     format = format.lower().lstrip(".")
-    if format not in {"png", "pdf", "svg"}:
-        raise ValueError("format must be one of: png, pdf, svg")
+    if format not in {"html", "png", "pdf", "svg", "json"}:
+        raise ValueError("format must be one of: html, png, pdf, svg, json")
+
+    def write_figure(path):
+        if format == "html":
+            fig.write_html(path, include_plotlyjs=True, full_html=True)
+        elif format == "json":
+            fig.write_json(path)
+        else:
+            try:
+                fig.write_image(path, format=format)
+            except ValueError as exc:
+                raise RuntimeError(
+                    "Static Plotly export requires kaleido; install it with "
+                    "`python -m pip install kaleido`, or use format='html'."
+                ) from exc
 
     return _save_derived_artifact(
         raw_run,
-        lambda path: fig.savefig(path, format=format),
+        write_figure,
         name,
         format,
         "figure",
